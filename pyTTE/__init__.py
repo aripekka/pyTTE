@@ -1,3 +1,4 @@
-from pyTTE import takagitaupin
+from .pyTTE import takagitaupin
+from . import examples
 
-__all__=['takagitaupin']
+__all__=['takagitaupin','examples']

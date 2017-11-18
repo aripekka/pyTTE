@@ -10,14 +10,15 @@ from setuptools import setup
 
 
 setup(name='pyTTE',
-      version='0.1.0',
+      version='0.1.0b',
       description='Package to compute X-ray diffraction curves of bent crystals by numerically solving the Takagi-Taupin equations.',
       author='Ari-Pekka Honkanen',
-      author_email='ari-pekka.honkanen@helsinki.fi',
+      author_email='honkanen.ap@gmail.com',
       url='https://github.com/aripekka/pyTTE/',
       packages=[
                 'pyTTE',
-                'pyTTE.examples'
+                'pyTTE.examples',
+                'pyTTE.examples.reference_curves'
                ],
       install_requires=[
                         'numpy',

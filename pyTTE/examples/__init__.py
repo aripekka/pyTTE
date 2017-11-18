@@ -1,4 +1,4 @@
-from examples import *
+from .examples import *
 import matplotlib.pyplot as plt
 import time
 
