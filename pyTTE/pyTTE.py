@@ -217,15 +217,11 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     #Define ODEs and their Jacobians
     if geometry == 'bragg':
         print('Transmission in the Bragg case not implemented!')
-
         reflectivity = np.zeros(scan.shape)
         transmission = -np.ones(scan.shape)
-
     else:
-
         forward_diffraction = np.zeros(scan.shape)
         diffraction = np.zeros(scan.shape)
-
 
     #Solve the equation
     sys.stdout.write('Solving...0%')
@@ -242,7 +238,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
         
         if geometry == 'bragg':
             def ksiprime(z,ksi,step):
-                return 1j*cb_step*ksi**2+1j*(c0_step+beta_step+strain_term(z,step))*ksi+1j*ch_step
+                return 1j*cb_step*ksi*ksi+1j*(c0_step+beta_step+strain_term(z,step))*ksi+1j*ch_step
 
             def ksiprime_jac(z,ksi,step):
                 return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z,step))
@@ -250,7 +246,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
             r=ode(ksiprime,ksiprime_jac)
         else:
             def TTE(z,Y,step):
-                return [1j*cb_step*Y[0]**2+1j*(c0_step+beta_step+strain_term(z,step))*Y[0]+1j*ch_step,\
+                return [1j*cb_step*Y[0]*Y[0]+1j*(c0_step+beta_step+strain_term(z,step))*Y[0]+1j*ch_step,\
                         -1j*(g0_step+gb_step*Y[0])*Y[1]]
 
             def TTE_jac(z,Y,step):
