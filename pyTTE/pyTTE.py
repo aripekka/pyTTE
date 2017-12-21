@@ -188,8 +188,8 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     #Bending
     if not displacement_jacobian == None:
 
-        def strain_term(z,step):
-            if is_escan:
+        if is_escan:
+            def strain_term(z,step):
                 x = -z*np.cos(alpha0)/np.sin(alpha0)
                 u_jac = displacement_jacobian(x,z)
                 duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah)*u_jac[0,0] 
@@ -198,7 +198,8 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                                     +np.cos(phi)*np.sin(alphah)*u_jac[1,1]
                                     )
                 return gammah[step]*duh_dsh
-            else:
+        else:
+            def strain_term(z,step):
                 x = -z*np.cos(alpha0[step])/np.sin(alpha0[step])
                 u_jac = displacement_jacobian(x,z)
                 duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah[step])*u_jac[0,0]
