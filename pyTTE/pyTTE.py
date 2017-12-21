@@ -65,6 +65,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     d = xraylib.Crystal_dSpacing(crystal,*hkl)*1e-10 #in m
     V = crystal['volume']*1e-30 # volume of unit cell in m^3
     r_e = physical_constants['classical electron radius'][0]
+    h = 2*np.pi/d
 
     print('')
     print('Crystal     : ', crystal_str)
@@ -229,7 +230,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 def strain_term(z,step):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
-                    duh_dsh = 2*np.pi/d*(sin_phi*cos_alphah*u_jac[0,0] 
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
                                         +sin_phi*sin_alphah*u_jac[0,1]
                                         +cos_phi*cos_alphah*u_jac[1,0]
                                         +cos_phi*sin_alphah*u_jac[1,1]
@@ -243,7 +244,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 def strain_term(z,step):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
-                    duh_dsh = 2*np.pi/d*(sin_phi*cos_alphah*u_jac[0,0]
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
                                         +sin_phi*sin_alphah*u_jac[0,1]
                                         +cos_phi*cos_alphah*u_jac[1,0] 
                                         +cos_phi*sin_alphah*u_jac[1,1]
