@@ -231,10 +231,10 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
                     duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
-                                        +sin_phi*sin_alphah*u_jac[0,1]
-                                        +cos_phi*cos_alphah*u_jac[1,0]
-                                        +cos_phi*sin_alphah*u_jac[1,1]
-                                        )
+                                +sin_phi*sin_alphah*u_jac[0,1]
+                                +cos_phi*cos_alphah*u_jac[1,0]
+                                +cos_phi*sin_alphah*u_jac[1,1]
+                                )
                     return gammah_step*duh_dsh
             else:
                 cot_alpha0 = np.cos(alpha0[step])/np.sin(alpha0[step])
@@ -245,15 +245,15 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
                     duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
-                                        +sin_phi*sin_alphah*u_jac[0,1]
-                                        +cos_phi*cos_alphah*u_jac[1,0] 
-                                        +cos_phi*sin_alphah*u_jac[1,1]
-                                        )
+                                +sin_phi*sin_alphah*u_jac[0,1]
+                                +cos_phi*cos_alphah*u_jac[1,0] 
+                                +cos_phi*sin_alphah*u_jac[1,1]
+                                )
                     return gammah_step*duh_dsh
         
         if geometry == 'bragg':
             def ksiprime(z,ksi,step):
-                return 1j*cb_step*ksi*ksi+1j*(c0_step+beta_step+strain_term(z,step))*ksi+1j*ch_step
+                return 1j*(cb_step*ksi*ksi+(c0_step+beta_step+strain_term(z,step))*ksi+ch_step)
 
             def ksiprime_jac(z,ksi,step):
                 return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z,step))
@@ -261,7 +261,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
             r=ode(ksiprime,ksiprime_jac)
         else:
             def TTE(z,Y,step):
-                return [1j*cb_step*Y[0]*Y[0]+1j*(c0_step+beta_step+strain_term(z,step))*Y[0]+1j*ch_step,\
+                return [1j*(cb_step*Y[0]*Y[0]+(c0_step+beta_step+strain_term(z,step))*Y[0]+ch_step),\
                         -1j*(g0_step+gb_step*Y[0])*Y[1]]
 
             def TTE_jac(z,Y,step):
