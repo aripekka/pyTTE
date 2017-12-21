@@ -190,16 +190,22 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
 
         def strain_term(z,step):
             if is_escan:
-                x = z*np.cos(alpha0)/np.sin(alpha0)
+                x = -z*np.cos(alpha0)/np.sin(alpha0)
                 u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah)*u_jac[0,0] + np.sin(phi)*np.sin(alphah)*u_jac[0,1]/
-                        +np.cos(phi)*np.cos(alphah)*u_jac[1,0] + np.cos(phi)*np.sin(alphah)*u_jac[1,1])
+                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah)*u_jac[0,0] 
+                                    +np.sin(phi)*np.sin(alphah)*u_jac[0,1]
+                                    +np.cos(phi)*np.cos(alphah)*u_jac[1,0]
+                                    +np.cos(phi)*np.sin(alphah)*u_jac[1,1]
+                                    )
                 return gammah[step]*duh_dsh
             else:
-                x = z*np.cos(alpha0[step])/np.sin(alpha0[step])
+                x = -z*np.cos(alpha0[step])/np.sin(alpha0[step])
                 u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah[step])*u_jac[0,0] + np.sin(phi)*np.sin(alphah[step])*u_jac[0,1]/
-                        +np.cos(phi)*np.cos(alphah[step])*u_jac[1,0] + np.cos(phi)*np.sin(alphah[step])*u_jac[1,1])
+                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah[step])*u_jac[0,0]
+                                    +np.sin(phi)*np.sin(alphah[step])*u_jac[0,1]
+                                    +np.cos(phi)*np.cos(alphah[step])*u_jac[1,0] 
+                                    +np.cos(phi)*np.sin(alphah[step])*u_jac[1,1]
+                                    )
                 return gammah[step]*duh_dsh
 
     else:
