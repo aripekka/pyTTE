@@ -188,7 +188,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
 
     #For deformation, the strain term function defined later stepwise 
     if displacement_jacobian == None:
-        def strain_term(z,step): 
+        def strain_term(z): 
             return 0
 
     #INTEGRATION
@@ -227,7 +227,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 sin_alphah = np.sin(alphah)
                 cos_alphah = np.cos(alphah)
 
-                def strain_term(z,step):
+                def strain_term(z):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
                     duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
@@ -241,7 +241,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 sin_alphah = np.sin(alphah[step])
                 cos_alphah = np.cos(alphah[step])
 
-                def strain_term(z,step):
+                def strain_term(z):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
                     duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
@@ -252,28 +252,26 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                     return gammah_step*duh_dsh
         
         if geometry == 'bragg':
-            def ksiprime(z,ksi,step):
-                return 1j*(cb_step*ksi*ksi+(c0_step+beta_step+strain_term(z,step))*ksi+ch_step)
+            def ksiprime(z,ksi):
+                return 1j*(cb_step*ksi*ksi+(c0_step+beta_step+strain_term(z))*ksi+ch_step)
 
-            def ksiprime_jac(z,ksi,step):
-                return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z,step))
+            def ksiprime_jac(z,ksi):
+                return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z))
 
             r=ode(ksiprime,ksiprime_jac)
         else:
-            def TTE(z,Y,step):
-                return [1j*(cb_step*Y[0]*Y[0]+(c0_step+beta_step+strain_term(z,step))*Y[0]+ch_step),\
+            def TTE(z,Y):
+                return [1j*(cb_step*Y[0]*Y[0]+(c0_step+beta_step+strain_term(z))*Y[0]+ch_step),\
                         -1j*(g0_step+gb_step*Y[0])*Y[1]]
 
-            def TTE_jac(z,Y,step):
-                return [[2j*cb_step*Y[0]+1j*(c0_step+beta_step+strain_term(z,step)), 0],\
+            def TTE_jac(z,Y):
+                return [[2j*cb_step*Y[0]+1j*(c0_step+beta_step+strain_term(z)), 0],\
                         [-1j*gb_step*Y[1],-1j*(g0_step+gb_step*Y[0])]]
 
             r=ode(TTE,TTE_jac)
 
         r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=min_int_step,max_step=1e-4,nsteps=50000)
-        r.set_f_params(step)
-        r.set_jac_params(step)
-        
+
         if geometry == 'bragg':
             r.set_initial_value(0,-thickness)
             res=r.integrate(0)     
