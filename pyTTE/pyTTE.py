@@ -221,24 +221,10 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
         reflectivity = np.zeros(scan.shape)
         transmission = -np.ones(scan.shape)
 
-        def ksiprime(z,ksi,step):
-            return 1j*cb[step]*ksi**2+1j*(c0[step]+beta[step]+strain_term(z,step))*ksi+1j*ch[step]
-
-        def ksiprime_jac(z,ksi,step):
-            return 2j*cb[step]*ksi+1j*(c0[step]+beta[step]+strain_term(z,step))
-
     else:
 
         forward_diffraction = np.zeros(scan.shape)
         diffraction = np.zeros(scan.shape)
-
-        def TTE(z,Y,step):
-            return [1j*cb[step]*Y[0]**2+1j*(c0[step]+beta[step]+strain_term(z,step))*Y[0]+1j*ch[step],\
-                    -1j*(g0[step]+gb[step]*Y[0])*Y[1]]
-
-        def TTE_jac(z,Y,step):
-            return [[2j*cb[step]*Y[0]+1j*(c0[step]+beta[step]+strain_term(z,step)), 0],\
-                    [-1j*gb[step]*Y[1],-1j*(g0[step]+gb[step]*Y[0])]]
 
 
     #Solve the equation
@@ -246,9 +232,31 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     sys.stdout.flush()
     
     for step in range(len(scan)):
+        #local variables for speedup
+        c0_step   = c0[step]
+        cb_step   = cb[step]
+        ch_step   = ch[step]
+        beta_step = beta[step]
+        g0_step   = g0[step]
+        gb_step   = gb[step]
+        
         if geometry == 'bragg':
+            def ksiprime(z,ksi,step):
+                return 1j*cb_step*ksi**2+1j*(c0_step+beta_step+strain_term(z,step))*ksi+1j*ch_step
+
+            def ksiprime_jac(z,ksi,step):
+                return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z,step))
+
             r=ode(ksiprime,ksiprime_jac)
         else:
+            def TTE(z,Y,step):
+                return [1j*cb_step*Y[0]**2+1j*(c0_step+beta_step+strain_term(z,step))*Y[0]+1j*ch_step,\
+                        -1j*(g0_step+gb_step*Y[0])*Y[1]]
+
+            def TTE_jac(z,Y,step):
+                return [[2j*cb_step*Y[0]+1j*(c0_step+beta_step+strain_term(z,step)), 0],\
+                        [-1j*gb_step*Y[1],-1j*(g0_step+gb_step*Y[0])]]
+
             r=ode(TTE,TTE_jac)
 
         r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=min_int_step,max_step=1e-4,nsteps=50000)
