@@ -106,9 +106,13 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
         ascan = scan*np.pi/648000 #from arcsec to rad
         th = th0+ascan
 
+    #Incidence and exit angles
+    alpha0 = th+phi
+    alphah = th-phi
+    
     #Direction parameters
-    gamma0=np.ones(scan.shape)/np.sin(th+phi)
-    gammah=np.ones(scan.shape)/np.sin(th-phi)
+    gamma0 = np.ones(scan.shape)/np.sin(alpha0)
+    gammah = np.ones(scan.shape)/np.sin(alphah)
 
     if np.mean(gammah) < 0:
         print('The direction of diffraction in to the crystal -> Laue case')
@@ -186,16 +190,16 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
 
         def strain_term(z,step):
             if is_escan:
-                x = z*np.cos(th+phi)/np.sin(th+phi)
+                x = z*np.cos(alpha0)/np.sin(alpha0)
                 u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(th-phi)*u_jac[0,0] + np.sin(phi)*np.sin(th-phi)*u_jac[0,1]/
-                        +np.cos(phi)*np.cos(th-phi)*u_jac[1,0] + np.cos(phi)*np.sin(th-phi)*u_jac[1,1])
+                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah)*u_jac[0,0] + np.sin(phi)*np.sin(alphah)*u_jac[0,1]/
+                        +np.cos(phi)*np.cos(alphah)*u_jac[1,0] + np.cos(phi)*np.sin(alphah)*u_jac[1,1])
                 return gammah[step]*duh_dsh
             else:
-                x = z*np.cos(th[step]+phi)/np.sin(th[step]+phi)
+                x = z*np.cos(alpha0[step])/np.sin(alpha0[step])
                 u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(th[step]-phi)*u_jac[0,0] + np.sin(phi)*np.sin(th[step]-phi)*u_jac[0,1]/
-                        +np.cos(phi)*np.cos(th[step]-phi)*u_jac[1,0] + np.cos(phi)*np.sin(th[step]-phi)*u_jac[1,1])
+                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah[step])*u_jac[0,0] + np.sin(phi)*np.sin(alphah[step])*u_jac[0,1]/
+                        +np.cos(phi)*np.cos(alphah[step])*u_jac[1,0] + np.cos(phi)*np.sin(alphah[step])*u_jac[1,1])
                 return gammah[step]*duh_dsh
 
     else:
