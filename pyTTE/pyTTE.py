@@ -65,6 +65,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     d = xraylib.Crystal_dSpacing(crystal,*hkl)*1e-10 #in m
     V = crystal['volume']*1e-30 # volume of unit cell in m^3
     r_e = physical_constants['classical electron radius'][0]
+    h = 2*np.pi/d
 
     print('')
     print('Crystal     : ', crystal_str)
@@ -185,31 +186,9 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     #deviation from the kinematical Bragg condition for unstrained crystal
     beta = 2*np.pi/d*gammah*(np.sin(th)-wavelength/(2*d))
 
-    #Bending
-    if not displacement_jacobian == None:
-
-        def strain_term(z,step):
-            if is_escan:
-                x = -z*np.cos(alpha0)/np.sin(alpha0)
-                u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah)*u_jac[0,0] 
-                                    +np.sin(phi)*np.sin(alphah)*u_jac[0,1]
-                                    +np.cos(phi)*np.cos(alphah)*u_jac[1,0]
-                                    +np.cos(phi)*np.sin(alphah)*u_jac[1,1]
-                                    )
-                return gammah[step]*duh_dsh
-            else:
-                x = -z*np.cos(alpha0[step])/np.sin(alpha0[step])
-                u_jac = displacement_jacobian(x,z)
-                duh_dsh = 2*np.pi/d*(np.sin(phi)*np.cos(alphah[step])*u_jac[0,0]
-                                    +np.sin(phi)*np.sin(alphah[step])*u_jac[0,1]
-                                    +np.cos(phi)*np.cos(alphah[step])*u_jac[1,0] 
-                                    +np.cos(phi)*np.sin(alphah[step])*u_jac[1,1]
-                                    )
-                return gammah[step]*duh_dsh
-
-    else:
-        def strain_term(z,step): 
+    #For deformation, the strain term function defined later stepwise 
+    if displacement_jacobian == None:
+        def strain_term(z): 
             return 0
 
     #INTEGRATION
@@ -217,44 +196,82 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     #Define ODEs and their Jacobians
     if geometry == 'bragg':
         print('Transmission in the Bragg case not implemented!')
-
         reflectivity = np.zeros(scan.shape)
         transmission = -np.ones(scan.shape)
-
-        def ksiprime(z,ksi,step):
-            return 1j*cb[step]*ksi**2+1j*(c0[step]+beta[step]+strain_term(z,step))*ksi+1j*ch[step]
-
-        def ksiprime_jac(z,ksi,step):
-            return 2j*cb[step]*ksi+1j*(c0[step]+beta[step]+strain_term(z,step))
-
     else:
-
         forward_diffraction = np.zeros(scan.shape)
         diffraction = np.zeros(scan.shape)
-
-        def TTE(z,Y,step):
-            return [1j*cb[step]*Y[0]**2+1j*(c0[step]+beta[step]+strain_term(z,step))*Y[0]+1j*ch[step],\
-                    -1j*(g0[step]+gb[step]*Y[0])*Y[1]]
-
-        def TTE_jac(z,Y,step):
-            return [[2j*cb[step]*Y[0]+1j*(c0[step]+beta[step]+strain_term(z,step)), 0],\
-                    [-1j*gb[step]*Y[1],-1j*(g0[step]+gb[step]*Y[0])]]
-
 
     #Solve the equation
     sys.stdout.write('Solving...0%')
     sys.stdout.flush()
     
     for step in range(len(scan)):
+        #local variables for speedup
+        c0_step   = c0[step]
+        cb_step   = cb[step]
+        ch_step   = ch[step]
+        beta_step = beta[step]
+        g0_step   = g0[step]
+        gb_step   = gb[step]
+        gammah_step = gammah[step]
+
+        #Define deformation term for bent crystal
+        if not displacement_jacobian == None:
+            #Precomputed sines and cosines
+            sin_phi = np.sin(phi)
+            cos_phi = np.cos(phi)
+
+            if is_escan:
+                cot_alpha0 = np.cos(alpha0)/np.sin(alpha0)
+                sin_alphah = np.sin(alphah)
+                cos_alphah = np.cos(alphah)
+
+                def strain_term(z):
+                    x = -z*cot_alpha0
+                    u_jac = displacement_jacobian(x,z)
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
+                                +sin_phi*sin_alphah*u_jac[0,1]
+                                +cos_phi*cos_alphah*u_jac[1,0]
+                                +cos_phi*sin_alphah*u_jac[1,1]
+                                )
+                    return gammah_step*duh_dsh
+            else:
+                cot_alpha0 = np.cos(alpha0[step])/np.sin(alpha0[step])
+                sin_alphah = np.sin(alphah[step])
+                cos_alphah = np.cos(alphah[step])
+
+                def strain_term(z):
+                    x = -z*cot_alpha0
+                    u_jac = displacement_jacobian(x,z)
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
+                                +sin_phi*sin_alphah*u_jac[0,1]
+                                +cos_phi*cos_alphah*u_jac[1,0] 
+                                +cos_phi*sin_alphah*u_jac[1,1]
+                                )
+                    return gammah_step*duh_dsh
+        
         if geometry == 'bragg':
+            def ksiprime(z,ksi):
+                return 1j*(cb_step*ksi*ksi+(c0_step+beta_step+strain_term(z))*ksi+ch_step)
+
+            def ksiprime_jac(z,ksi):
+                return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z))
+
             r=ode(ksiprime,ksiprime_jac)
         else:
+            def TTE(z,Y):
+                return [1j*(cb_step*Y[0]*Y[0]+(c0_step+beta_step+strain_term(z))*Y[0]+ch_step),\
+                        -1j*(g0_step+gb_step*Y[0])*Y[1]]
+
+            def TTE_jac(z,Y):
+                return [[2j*cb_step*Y[0]+1j*(c0_step+beta_step+strain_term(z)), 0],\
+                        [-1j*gb_step*Y[1],-1j*(g0_step+gb_step*Y[0])]]
+
             r=ode(TTE,TTE_jac)
 
         r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=min_int_step,max_step=1e-4,nsteps=50000)
-        r.set_f_params(step)
-        r.set_jac_params(step)
-        
+
         if geometry == 'bragg':
             r.set_initial_value(0,-thickness)
             res=r.integrate(0)     
