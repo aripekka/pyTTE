@@ -1,0 +1,72 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=4cm]{geometry}
+\usepackage{mathtools}
+\usepackage{cases}
+
+
+\author{Ari-Pekka Honkanen}
+\title{PyTTE: The Technical Document}
+\begin{document}
+\maketitle
+\section{Introduction}
+PyTTE (pronounced \emph{pie-tee-tee-ee}) is a Python package for solving X-ray diffraction curves of bent crystals in reflection and transmission geometries. The computation of the diffraction curves is based on the numerical integration of 1D Takagi-Taupin equation (TTE) which is derived from a more general Takagi-Taupin theory describing the propagation of electromagnetic waves in a (quasi)periodic medium. Both energy and angle scans are supported.
+This document describes the theoretical basis behind PyTTE.
+
+\section{Takagi-Taupin equation}
+In the typical two-beam case, the Takagi-Taupin equations are can be written as
+\begin{subnumcases}{}
+\frac{\partial D_0}{\partial s_0} =  i c_0 D_0 + i c_{\bar{h}} D_h \label{eq:TT_typicala} \\
+\frac{\partial D_h}{\partial s_h} =  i \left(c_0 + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h}  \right) D_h
++ ic_h D_0, \label{eq:TT_typicalb}
+\end{subnumcases}
+where $D_0$ and $D_h$ are the pseudoamplitudes of the incident and diffracted waves, and $s_0$ and $s_h$ coordinates along their direction of propagation, respectively. The deformation of the crystal is contained in $\mathbf{h}\cdot\mathbf{u}$ which will be considered in detail later. The coefficients $c_{0,h,\bar{h}}$ are given by
+\begin{equation}
+c_0 = \frac{k \chi_0}{2} \qquad c_{h,\bar{h}} = \frac{k C \chi_{h,\bar{h}}}{2},
+\end{equation} 
+where $k=2 \pi/\lambda$ and $C = 1$ for $\sigma$-polarization and $\cos 2 \theta_B$ for $\pi$-polarization. The deviation parameter $\beta = (k_h^2 - k_0^2)/2k_h$ is quite often approximated by $\beta \approx k \Delta \theta \sin 2 \theta_B$, where $\Delta \theta$ is the deviation from the Bragg angle. However, since this approximation ceases to be valid near the backscattering condition, PyTTE uses a more general form
+\begin{equation}
+\beta = \frac{2 \pi}{d_h}\left(\frac{\lambda}{2 d_h}-\sin \theta \right) = h \left(\frac{\lambda}{2 d_h}-\sin \theta \right),
+\end{equation}
+where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes.
+
+%THIS PARAGRAPH NEEDS A FIGURE
+The partial derivatives with respect to $s_0$ and $s_h$ can be written in Cartesian coordinates as
+\begin{equation}
+\frac{\partial}{\partial s_0} = \cos \alpha_0 \frac{\partial}{\partial x} - \sin \alpha_0 \frac{\partial}{\partial z} \qquad \frac{\partial}{\partial s_h} = \cos \alpha_h \frac{\partial}{\partial x} + \sin \alpha_h \frac{\partial}{\partial z}.
+\end{equation}
+The incidence and exit angles $\alpha_0$ and $\alpha_h$ with respect to the crystal surface are related to $\theta$ by $\alpha_0 = \theta + \varphi$ and $\alpha_h = \theta - \varphi$, where $\varphi$ is the asymmetry angle (positive clockwise). When seeking a solely depth-dependent solution for $D_0$ and $D_h$, we may drop the $x$-derivatives and thus obtain 
+\begin{subnumcases}{}
+\frac{d D_0}{d z} =  - i \gamma_0 c_0 D_0 - i \gamma_0 c_{\bar{h}} D_h \label{eq:TT_b} \\
+\frac{d D_h}{d z} =  i \gamma_h \left(c_0 + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h}  \right) D_h + i \gamma_h c_h D_0, 
+\end{subnumcases}
+where $\gamma_0 = 1/\sin \alpha_0$ and $\gamma_h = 1/\sin \alpha_h$. By defining $\xi = D_h/D_0$, the equations can be written as a single ordinary differential equation
+\begin{equation}
+\frac{d \xi}{d z} = i \gamma_0 c_{\bar{h}} \xi^2 + i \left[ (\gamma_0+\gamma_h)c_0 + \gamma_h \beta + \gamma_h \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] \xi + i \gamma_h c_h
+\label{eq:xi}
+\end{equation}
+
+In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of the crystal with thickness $t$ can be solved by integrating Equation~\eqref{eq:xi} from the bottom of the crystal $z=-t$ to the top surface $z=0$. The initial condition is set $\xi(-t)=0$. The reflectivity, which is defined in the terms of integrated intensity, is then computed $R = \gamma_0/\gamma_h|\xi(0)|^2$ where $\gamma_0/\gamma_h$ takes care of different footprint sizes in the asymmetric case. Using the solved $\xi$ and Equation~\eqref{eq:TT_b}, the transmission $T=|D_0(-t)/D_0(0)|^2$ can be then solved from
+\begin{equation}
+\frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
+\end{equation}
+by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\section{Deformation}
+As stated in the previous section, the deformation is introduced through $\partial_h(\mathbf{h}\cdot \mathbf{u})$ term where $\mathbf{u}$ is the displacement vector field. Taking the asymmetry into account, the reciprocal vector is given by $\mathbf{h} = h \sin \varphi \hat{\mathbf{x}} + h \cos \varphi \hat{\mathbf{z}}$. Thus
+\begin{equation}
+\frac{\partial (\mathbf{h}\cdot \mathbf{u})}{\partial s_h} = h \sin \varphi \frac{\partial u_x}{\partial s_h} + h \cos \varphi \frac{\partial u_z}{\partial s_h}.
+\end{equation}
+Again we write the partial derivatives in terms of $x$ and $z$. In this case, however, neither $x$- or $z$-derivatives can be dropped as they both contain physical information about the rotation and the separation of the diffractive planes. Since the beam propagates also in the $x$-direction, the situation is not strictly speaking one dimensional. However, since the $x$-coordinate is geometrically related to $z$, the problem can be treated as such. Therefore the deformation term becomes
+\begin{equation}
+\frac{\partial (\mathbf{h}\cdot \mathbf{u})}{\partial s_h} = h \left( 
+\sin \varphi \cos \alpha' \frac{\partial u_x}{\partial x} 
++\sin \varphi \sin \alpha' \frac{\partial u_x}{\partial z} 
++\cos \varphi \cos \alpha' \frac{\partial u_z}{\partial x} 
++\cos \varphi \sin \alpha' \frac{\partial u_z}{\partial z} 
+ \right),
+\end{equation}
+where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
+
+\end{document}
