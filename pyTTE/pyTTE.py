@@ -3,7 +3,6 @@ import sys
 import os
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from scipy.integrate import ode
 from scipy.constants.codata import physical_constants
@@ -184,7 +183,7 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
     gb = k*C*chib/2*gamma0*np.ones(scan.shape)
 
     #deviation from the kinematical Bragg condition for unstrained crystal
-    beta = 2*np.pi/d*gammah*(np.sin(th)-wavelength/(2*d))
+    beta = h*gammah*(np.sin(th)-wavelength/(2*d))
 
     #For deformation, the strain term function defined later stepwise 
     if displacement_jacobian == None:
