@@ -1,10 +1,11 @@
 from __future__ import division, print_function
-import numpy as np
 
 def isotropic_plate(Rx,Ry,nu,thickness):
     '''
     Creates a function for computing the Jacobian of
     the displacement field for an isotropic plate.
+    HINT: For cylindrical bending with anticlastic
+    curvature, set Ry = -Rx/nu
     '''
 
     if Rx == 'inf' or Rx == 'Inf' or Rx == np.inf:
@@ -24,7 +25,7 @@ def isotropic_plate(Rx,Ry,nu,thickness):
         uz_x = x*invRx
         uz_z = nu/(1-nu)*(invRx+invRy)*(z+0.5*thickness)
 
-        return np.array([[ux_x,ux_z],[uz_x,uz_z]])
+        return [[ux_x,ux_z],[uz_x,uz_z]]
 
     return jacobian
 
