@@ -24,7 +24,7 @@ def isotropic_plate(Rx,Ry,nu,thickness):
         uz_x = x*invRx
         uz_z = nu/(1-nu)*(invRx+invRy)*(z+0.5*thickness)
 
-        return np.array([[ux_x,ux_y],[uy_x,uy_y]])
+        return np.array([[ux_x,ux_z],[uz_x,uz_z]])
 
     return jacobian
 
