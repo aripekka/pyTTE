@@ -230,10 +230,10 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 def strain_term(z):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
-                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
-                                +sin_phi*sin_alphah*u_jac[0,1]
-                                +cos_phi*cos_alphah*u_jac[1,0]
-                                +cos_phi*sin_alphah*u_jac[1,1]
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0] 
+                                +sin_phi*sin_alphah*u_jac[0][1]
+                                +cos_phi*cos_alphah*u_jac[1][0]
+                                +cos_phi*sin_alphah*u_jac[1][1]
                                 )
                     return gammah_step*duh_dsh
             else:
@@ -244,10 +244,10 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
                 def strain_term(z):
                     x = -z*cot_alpha0
                     u_jac = displacement_jacobian(x,z)
-                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
-                                +sin_phi*sin_alphah*u_jac[0,1]
-                                +cos_phi*cos_alphah*u_jac[1,0] 
-                                +cos_phi*sin_alphah*u_jac[1,1]
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0]
+                                +sin_phi*sin_alphah*u_jac[0][1]
+                                +cos_phi*cos_alphah*u_jac[1][0] 
+                                +cos_phi*sin_alphah*u_jac[1][1]
                                 )
                     return gammah_step*duh_dsh
         
