@@ -1,4 +1,5 @@
 from __future__ import division, print_function
+from numpy import inf
 
 def isotropic_plate(Rx,Ry,nu,thickness):
     '''
@@ -8,12 +9,12 @@ def isotropic_plate(Rx,Ry,nu,thickness):
     curvature, set Ry = -Rx/nu
     '''
 
-    if Rx == 'inf' or Rx == 'Inf' or Rx == np.inf:
+    if Rx == 'inf' or Rx == 'Inf' or Rx == inf:
         invRx = 0
     else:
         invRx = 1/Rx
 
-    if Ry == 'inf' or Ry == 'Inf' or Ry == np.inf:
+    if Ry == 'inf' or Ry == 'Inf' or Ry == inf:
         invRy = 0
     else:
         invRy = 1/Ry
@@ -36,12 +37,12 @@ def anisotropic_plate(Rx,Ry,S,thickness):
     HINT: For cylindrical bending with anticlastic
     curvature, set Ry = S_11/S_12*Rx
     '''
-    if Rx == 'inf' or Rx == 'Inf' or Rx == np.inf:
+    if Rx == 'inf' or Rx == 'Inf' or Rx == inf:
         invRx = 0
     else:
         invRx = 1/Rx
 
-    if Ry == 'inf' or Ry == 'Inf' or Ry == np.inf:
+    if Ry == 'inf' or Ry == 'Inf' or Ry == inf:
         invRy = 0
     else:
         invRy = 1/Ry
