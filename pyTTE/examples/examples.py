@@ -3,6 +3,7 @@ import time
 import os
 
 from .. import takagitaupin
+from .. import deformation
 
 def bragg_reflectivity_sigma():
     print ('Computing Bragg reflectivity for 300 um thick, non-bent GaAS(400)')
@@ -74,18 +75,7 @@ def bragg_bent_symmetric():
     nu = 0.27
 
     #Define Jacobian for cylindrical bending
-    def ujac2(x,y,thickness,R_bend,nu):
-        ux_x = -1/R_bend*(y+thickness/2)
-        ux_y = -x/R_bend
-
-        uy_x = x/R_bend
-        uy_y = nu/R_bend*(thickness/2+y)
-
-        return np.array([[ux_x,ux_y],[uy_x,uy_y]])
-
-    def ujac(x,y):
-        return ujac2(x,y,thickness*1e-6,R_bend,nu)
-
+    ujac= deformation.isotropic_plate(R_bend,-R_bend/nu,nu,thickness*1e-6)
 
     t0 = time.time()
     R,T=takagitaupin('energy',e,88,'sigma','Si',[6,6,0],0,thickness,ujac,1,1e-10)
