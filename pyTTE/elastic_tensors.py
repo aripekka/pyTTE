@@ -1,6 +1,13 @@
 from __future__ import division, print_function
 import numpy as np
 
+#Elastic constants for single crystals in units 10^11 Pa
+#Source: CRC Handbook of Chemistry and Physics, 82nd edition
+CRYSTALS = {
+            'Si' : {'system' : 'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
+            'Ge' : {'system' : 'cubic', 'C11' : 1.2835, 'C12' : 0.4823, 'C44' : 0.6666},
+           }
+
 def rotation_matrix(hkl):
     '''
         Computes the rotation matrix which aligns the given hkl along z-axis.
@@ -27,15 +34,16 @@ def compute_elastic_matrices(zdir, xtal):
         Computes the compliance and stiffness matrices S and C a given z-direction.
         The x- and y-directions are determined automatically
     '''
-    xtal = xtal.lower()
 
-    #TODO: read the elastic constants from a file
-    if xtal == 'ge':
-    	c1111, c1122, c2323 = 1.292, 0.479, 0.670
-    elif xtal == 'si':
-    	c1111, c1122, c2323 = 1.657, 0.639, 0.796
+    try:
+        xtal_data=CRYSTALS[xtal]
+    except KeyError:
+        raise KeyError("Elastic parameters for '"+str(xtal)+"' not found!")
+
+    if xtal_data['system'] == 'cubic':
+    	c1111, c1122, c2323 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
     else:
-        raise ValueError('Elastic parameters for the crystal not found!')
+        ValueError('Non-cubic systems not implemented yet!')
 
     #TODO: generalize to other systems alongside the cubic as well
     Cc = np.zeros((3,3,3,3))
@@ -76,4 +84,4 @@ def compute_elastic_matrices(zdir, xtal):
     return S, C
 
 if __name__=='__main__':
-    print(compute_elastic_matrices([1,1,1],'si'))
+    print(compute_elastic_matrices([1,1,1],'Si'))
