@@ -41,10 +41,47 @@ def compute_elastic_matrices(zdir, xtal):
         raise KeyError("Elastic parameters for '"+str(xtal)+"' not found!")
 
     if xtal_data['system'] == 'cubic':
-    	c1111, c1122, c2323 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
+        C11, C12, C44 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
+        C22, C33 = C11, C11
+        C13, C23 = C12, C12
+        C55, C66 = C44, C44
+        C14, C15, C16, C24, C25, C26, C34, C35, C36, C45, C46, C56 = 0,0,0,0,0,0,0,0,0,0,0,0
     else:
         ValueError('Non-cubic systems not implemented yet!')
 
+    Cc = np.zeros((3,3,3,3))
+
+    Cc[0,0,0,0] = C11
+    Cc[0,0,1,1], Cc[1,1,0,0] = C12, C12
+    Cc[0,0,2,2], Cc[2,2,0,0] = C13, C13
+    Cc[0,0,1,2], Cc[0,0,2,1], Cc[1,2,0,0], Cc[2,1,0,0] = C14, C14, C14, C14
+    Cc[0,0,2,0], Cc[0,0,0,2], Cc[0,2,0,0], Cc[2,0,0,0] = C15, C15, C15, C15
+    Cc[0,0,0,1], Cc[0,0,1,0], Cc[0,1,0,0], Cc[1,0,0,0] = C16, C16, C16, C16
+
+    Cc[1,1,1,1] = C22
+    Cc[1,1,2,2], Cc[2,2,1,1] = C23, C23
+    Cc[1,1,1,2], Cc[1,1,2,1], Cc[1,2,1,1], Cc[2,1,1,1] = C24, C24, C24, C24
+    Cc[1,1,2,0], Cc[1,1,0,2], Cc[0,2,1,1], Cc[2,0,1,1] = C25, C25, C25, C25
+    Cc[1,1,0,1], Cc[1,1,1,0], Cc[0,1,1,1], Cc[1,0,1,1] = C26, C26, C26, C26
+
+    Cc[2,2,2,2] = C33
+    Cc[2,2,1,2], Cc[2,2,2,1], Cc[1,2,2,2], Cc[2,1,2,2] = C34, C34, C34, C34
+    Cc[2,2,2,0], Cc[2,2,0,2], Cc[0,2,2,2], Cc[2,0,2,2] = C35, C35, C35, C35
+    Cc[2,2,0,1], Cc[2,2,1,0], Cc[0,1,2,2], Cc[1,0,2,2] = C36, C36, C36, C36
+
+    Cc[1,2,1,2], Cc[1,2,2,1], Cc[2,1,1,2], Cc[2,1,2,1] = C44, C44, C44, C44
+    Cc[1,2,2,0], Cc[1,2,0,2], Cc[2,1,2,0], Cc[2,1,0,2] = C45, C45, C45, C45
+    Cc[2,0,1,2], Cc[0,2,1,2], Cc[2,0,2,1], Cc[0,2,2,1] = C45, C45, C45, C45
+    Cc[1,2,0,1], Cc[1,2,1,0], Cc[2,1,0,1], Cc[2,1,1,0] = C46, C46, C46, C46
+    Cc[0,1,1,2], Cc[1,0,1,2], Cc[0,1,2,1], Cc[1,0,2,1] = C46, C46, C46, C46
+
+    Cc[2,0,2,0], Cc[2,0,0,2], Cc[0,2,2,0], Cc[0,2,0,2] = C55, C55, C55, C55
+    Cc[2,0,0,1], Cc[2,0,1,0], Cc[0,2,0,1], Cc[0,2,1,0] = C56, C56, C56, C56
+    Cc[0,1,2,0], Cc[1,0,2,0], Cc[0,1,0,2], Cc[1,0,0,2] = C56, C56, C56, C56
+
+    Cc[0,1,0,1], Cc[0,1,1,0], Cc[1,0,0,1], Cc[1,0,1,0] = C66, C66, C66, C66
+
+    '''
     #TODO: generalize to other systems alongside the cubic as well
     Cc = np.zeros((3,3,3,3))
 
@@ -55,6 +92,7 @@ def compute_elastic_matrices(zdir, xtal):
     Cc[0,2,0,2], Cc[2,0,0,2], Cc[0,2,2,0], Cc[2,0,2,0] = c2323, c2323, c2323, c2323
     Cc[1,2,1,2], Cc[2,1,1,2], Cc[1,2,2,1], Cc[2,1,2,1] = c2323, c2323, c2323, c2323
     Cc[0,1,0,1], Cc[1,0,0,1], Cc[0,1,1,0], Cc[1,0,1,0] = c2323, c2323, c2323, c2323
+    '''
 
     Q = rotation_matrix(zdir)
 
@@ -84,4 +122,4 @@ def compute_elastic_matrices(zdir, xtal):
     return S, C
 
 if __name__=='__main__':
-    print(compute_elastic_matrices([1,1,1],'Si'))
+    print(compute_elastic_matrices([1,0,0],'Si'))
