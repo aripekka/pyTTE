@@ -9,7 +9,24 @@ CRYSTALS = {
             'CaMoO4' : {'system' : 'tetragonal', 'C11' : 1.447, 'C12' : 0.664,\
                         'C13' : 0.455, 'C16' : 0.134, 'C33':1.265,'C44':0.369,'C66':0.451},
             'CaCO3'  : {'system' : 'orthorhombic', 'C11' : 1.5958, 'C12' : 0.3663, 'C13' : 0.0197,\
-                        'C22' : 0.8697,'C23':0.1597, 'C33':0.8503,'C44':0.4132,'C55':0.2564,'C66':0.4274},
+                        'C22' : 0.8697,'C23':0.1597, 'C33':0.8503,'C44' : 0.4132,'C55':0.2564,'C66':0.4274},
+            'aegirine' : {'system' : 'monoclinic', 'C11' : 1.858, 'C12' : 0.685, 'C13' : 0.707, 'C15':0.098,'C22':1.813,\
+                         'C23':0.626, 'C25':0.094,'C33':2.344,'C35':0.214,'C44':0.629,'C46':0.077,'C55':0.510,'C66':0.474},
+            'Be' : {'system' : 'hexagonal', 'C11': 2.923, 'C12':0.267, 'C13':0.140, 'C33':3.364,'C55':1.625},
+            'quartz' : {'system': 'trigonal', 'C11': 0.8670, 'C12':0.0704, 'C13':0.1191, 'C14':-0.1804,'C33':1.0575,'C44':0.5820},
+
+            'test_cubic' : {'system' : 'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
+            'test_tetragonal' : {'system' : 'tetragonal', 'C11' : 11, 'C12' : 12,'C13' : 13, 'C16' : 16, 'C33':33,'C44':44,'C66':66},
+            'test_orthorhombic'  : {'system' : 'orthorhombic', 'C11':11,'C12':12,'C13':13,'C22':22,'C23':23,'C33':33,'C44' : 44,'C55':55,'C66':66},
+            'test_monoclinic' : {'system' : 'monoclinic', 'C11':11,'C12' :12,'C13':13,'C15':15,'C22':22,'C23':23,'C25':25,'C33':33,'C35':35,'C44':44,'C46':46,'C55':55,'C66':66},
+            'test_hexagonal' : {'system' : 'hexagonal', 'C11':11, 'C12':12, 'C13':13, 'C33':33,'C55':55},
+            'test_trigonal' : {'system': 'trigonal', 'C11':11,'C12':12,'C13':13,'C14':14,'C33':33,'C44':44},
+            'test_triclinic': {'system':'triclinic', 'C11':11,'C12':12,'C13':13,'C14':14,'C15':15,'C16':16,\
+                                                     'C22':22,'C23':23,'C24':24,'C25':25,'C26':26,\
+                                                     'C33':33,'C34':34,'C35':35,'C36':36,\
+                                                     'C44':44,'C45':45,'C46':46,\
+                                                     'C55':55,'C56':56,\
+                                                     'C66':66}
            }
 
 def rotation_matrix(hkl):
@@ -93,17 +110,17 @@ def compute_elastic_matrices(zdir, xtal):
         C34, C35, C36 = 0, 0, 0
         C44, C45, C46 = C55, 0, 0
         C56 =  0
-        C66 = (C11-C22)/2
+        C66 = (C11-C12)/2
     elif xtal_data['system'] == 'trigonal':
         C11, C12, C13, C14 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C14']
         C33  = xtal_data['C33']
         C44 = xtal_data['C44']
-        C15, C16 = 0, 0, 0
+        C15, C16 = 0, 0
         C22, C23, C24, C25, C26 = C11, C13, -C14, 0, 0
         C34, C35, C36 = 0, 0, 0
         C45, C46 =  0, 0
         C55, C56 =  C44, C14
-        C66 = (C11-C22)/2
+        C66 = (C11-C12)/2
     elif xtal_data['system'] == 'triclinic':
         C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
         C14, C15, C16 = xtal_data['C14'], xtal_data['C15'], xtal_data['C16']
@@ -177,6 +194,10 @@ def compute_elastic_matrices(zdir, xtal):
     return S, C
 
 if __name__=='__main__':
-    print('Si (cubic):\n',np.array2string(compute_elastic_matrices([0,0,1],'Si')[1]/1e11,precision=4,suppress_small=True))
-    print('CaMoO4 (tetragonal):\n',np.array2string(compute_elastic_matrices([0,0,1],'CaMoO4')[1]/1e11,precision=4,suppress_small=True))
-    print('CaCO3 (orthorhombic):\n',np.array2string(compute_elastic_matrices([0,0,1],'CaCO3')[1]/1e11,precision=4,suppress_small=True))
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
+    print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
+    print('Monoclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_monoclinic')[1]/1e11,precision=4,suppress_small=True))
+    print('Hexagonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_hexagonal')[1]/1e11,precision=4,suppress_small=True))
+    print('Trigonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_trigonal')[1]/1e11,precision=4,suppress_small=True))
+    print('Triclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_triclinic')[1]/1e11,precision=4,suppress_small=True))
