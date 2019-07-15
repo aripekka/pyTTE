@@ -41,7 +41,7 @@ def rotation_matrix(hkl,system='cubic'):
 
     if hkl[0] or hkl[1]:
         #rotation axis
-        u = -np.array([[hkl[1]],[-hkl[0]]])/np.sqrt(hkl[0]**2+hkl[1]**2)
+        u = -np.array([hkl[1],-hkl[0]])/np.sqrt(hkl[0]**2+hkl[1]**2)
         #rotation angle
         th = np.arccos(hkl[2]/np.sqrt(hkl[0]**2+hkl[1]**2+hkl[2]**2))
 
@@ -58,6 +58,7 @@ def compute_elastic_matrices(zdir, xtal):
     '''
         Computes the compliance and stiffness matrices S and C a given z-direction.
         The x- and y-directions are determined automatically
+        returns: S, C, x_dir, y_dir
     '''
 
     try:
@@ -195,10 +196,15 @@ def compute_elastic_matrices(zdir, xtal):
     C=C*1e11 #in pascal
     S = np.linalg.inv(C)
 
-    return S, C
+    #calculate x and y directions
+    #TODO generalize to non-cubic systems
+    x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
+    y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
+
+    return S, C, x_dir, y_dir
 
 if __name__=='__main__':
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([0,1,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
     '''
     print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
     print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
