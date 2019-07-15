@@ -29,11 +29,15 @@ CRYSTALS = {
                                                      'C66':66}
            }
 
-def rotation_matrix(hkl):
+def rotation_matrix(hkl,system='cubic'):
     '''
         Computes the rotation matrix which aligns the given hkl along z-axis.
         NOTE: works currently only for the cubic systems
+        TODO: figure out how to generalize to other systems, preferably by
+        obtaining the crystal directions from the elastic tensors
     '''
+    if not system == 'cubic':
+        raise NotImplementedError('Rotation of non-cubic systems not implemented!')
 
     if hkl[0] or hkl[1]:
         #rotation axis
@@ -60,7 +64,7 @@ def compute_elastic_matrices(zdir, xtal):
         xtal_data=CRYSTALS[xtal]
     except KeyError:
         raise KeyError("Elastic parameters for '"+str(xtal)+"' not found!")
-
+       
     if xtal_data['system'] == 'cubic':
         C11, C12, C44 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
         C13, C14, C15, C16 = C12, 0, 0, 0
@@ -132,7 +136,7 @@ def compute_elastic_matrices(zdir, xtal):
         C55, C56 = xtal_data['C55'], xtal_data['C56']
         C66 = xtal_data['C66']
     else:
-        ValueError('Not a valid crystal system yet!')
+        ValueError('Not a valid crystal system!')
 
     Cc = np.zeros((3,3,3,3))
 
@@ -166,7 +170,7 @@ def compute_elastic_matrices(zdir, xtal):
 
     Cc[0,1,0,1], Cc[0,1,1,0], Cc[1,0,0,1], Cc[1,0,1,0] = C66, C66, C66, C66
 
-    Q = rotation_matrix(zdir)
+    Q = rotation_matrix(zdir,xtal_data['system'])
 
     #Rotate the tensor
     #New faster version according to
@@ -195,9 +199,11 @@ def compute_elastic_matrices(zdir, xtal):
 
 if __name__=='__main__':
     print('Cubic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    '''
     print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
     print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
     print('Monoclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_monoclinic')[1]/1e11,precision=4,suppress_small=True))
     print('Hexagonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_hexagonal')[1]/1e11,precision=4,suppress_small=True))
     print('Trigonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_trigonal')[1]/1e11,precision=4,suppress_small=True))
     print('Triclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_triclinic')[1]/1e11,precision=4,suppress_small=True))
+    '''
