@@ -29,6 +29,77 @@ CRYSTALS = {
                                                      'C66':66}
            }
 
+def matrix2tensor(matrix):
+    '''
+        Converts the stiffness matrix using Voigt notation to elastic tensor.
+    '''
+    Cc = np.zeros((3,3,3,3))
+
+    C11 = matrix[0,0]; C12 = matrix[0,1]; C13 = matrix[0,2]
+    C14 = matrix[0,3]; C15 = matrix[0,4]; C16 = matrix[0,5]
+
+    C22 = matrix[1,1]; C23 = matrix[1,2]; C24 = matrix[1,3]
+    C25 = matrix[1,4]; C26 = matrix[1,5]
+
+    C33 = matrix[2,2]; C34 = matrix[2,3]
+    C35 = matrix[2,4]; C36 = matrix[2,5]
+
+    C44 = matrix[3,3]; C45 = matrix[3,4]; C46 = matrix[3,5]
+
+    C55 = matrix[4,4]; C56 = matrix[4,5]
+
+    C66 = matrix[5,5]
+
+    Cc[0,0,0,0] = C11
+    Cc[0,0,1,1], Cc[1,1,0,0] = C12, C12
+    Cc[0,0,2,2], Cc[2,2,0,0] = C13, C13
+    Cc[0,0,1,2], Cc[0,0,2,1], Cc[1,2,0,0], Cc[2,1,0,0] = C14, C14, C14, C14
+    Cc[0,0,2,0], Cc[0,0,0,2], Cc[0,2,0,0], Cc[2,0,0,0] = C15, C15, C15, C15
+    Cc[0,0,0,1], Cc[0,0,1,0], Cc[0,1,0,0], Cc[1,0,0,0] = C16, C16, C16, C16
+
+    Cc[1,1,1,1] = C22
+    Cc[1,1,2,2], Cc[2,2,1,1] = C23, C23
+    Cc[1,1,1,2], Cc[1,1,2,1], Cc[1,2,1,1], Cc[2,1,1,1] = C24, C24, C24, C24
+    Cc[1,1,2,0], Cc[1,1,0,2], Cc[0,2,1,1], Cc[2,0,1,1] = C25, C25, C25, C25
+    Cc[1,1,0,1], Cc[1,1,1,0], Cc[0,1,1,1], Cc[1,0,1,1] = C26, C26, C26, C26
+
+    Cc[2,2,2,2] = C33
+    Cc[2,2,1,2], Cc[2,2,2,1], Cc[1,2,2,2], Cc[2,1,2,2] = C34, C34, C34, C34
+    Cc[2,2,2,0], Cc[2,2,0,2], Cc[0,2,2,2], Cc[2,0,2,2] = C35, C35, C35, C35
+    Cc[2,2,0,1], Cc[2,2,1,0], Cc[0,1,2,2], Cc[1,0,2,2] = C36, C36, C36, C36
+
+    Cc[1,2,1,2], Cc[1,2,2,1], Cc[2,1,1,2], Cc[2,1,2,1] = C44, C44, C44, C44
+    Cc[1,2,2,0], Cc[1,2,0,2], Cc[2,1,2,0], Cc[2,1,0,2] = C45, C45, C45, C45
+    Cc[2,0,1,2], Cc[0,2,1,2], Cc[2,0,2,1], Cc[0,2,2,1] = C45, C45, C45, C45
+    Cc[1,2,0,1], Cc[1,2,1,0], Cc[2,1,0,1], Cc[2,1,1,0] = C46, C46, C46, C46
+    Cc[0,1,1,2], Cc[1,0,1,2], Cc[0,1,2,1], Cc[1,0,2,1] = C46, C46, C46, C46
+
+    Cc[2,0,2,0], Cc[2,0,0,2], Cc[0,2,2,0], Cc[0,2,0,2] = C55, C55, C55, C55
+    Cc[2,0,0,1], Cc[2,0,1,0], Cc[0,2,0,1], Cc[0,2,1,0] = C56, C56, C56, C56
+    Cc[0,1,2,0], Cc[1,0,2,0], Cc[0,1,0,2], Cc[1,0,0,2] = C56, C56, C56, C56
+
+    Cc[0,1,0,1], Cc[0,1,1,0], Cc[1,0,0,1], Cc[1,0,1,0] = C66, C66, C66, C66
+
+    return Cc
+
+def tensor2matrix(tensor):
+    '''
+        Converts the stiffness tensor to matrix using Voigt notation.
+    '''
+
+    Crot = tensor
+
+    C = np.array([
+        [Crot[0,0,0,0], Crot[0,0,1,1], Crot[0,0,2,2], Crot[0,0,1,2], Crot[0,0,0,2], Crot[0,0,0,1]],
+        [Crot[1,1,0,0], Crot[1,1,1,1], Crot[1,1,2,2], Crot[1,1,1,2], Crot[1,1,0,2], Crot[1,1,0,1]],
+        [Crot[2,2,0,0], Crot[2,2,1,1], Crot[2,2,2,2], Crot[2,2,1,2], Crot[2,2,0,2], Crot[2,2,0,1]],
+        [Crot[2,1,0,0], Crot[2,1,1,1], Crot[2,1,2,2], Crot[1,2,1,2], Crot[1,2,0,2], Crot[1,2,0,1]],
+        [Crot[2,0,0,0], Crot[2,0,1,1], Crot[2,0,2,2], Crot[2,0,1,2], Crot[0,2,0,2], Crot[2,0,0,1]],
+        [Crot[1,0,0,0], Crot[1,0,1,1], Crot[1,0,2,2], Crot[1,0,1,2], Crot[1,0,0,2], Crot[0,1,0,1]]
+    ]).reshape((6,6))
+    
+    return C
+    
 def rotation_matrix(hkl,system='cubic'):
     '''
         Computes the rotation matrix which aligns the given hkl along z-axis.
@@ -51,6 +122,23 @@ def rotation_matrix(hkl,system='cubic'):
            [-u[1]*np.sin(th), u[0]*np.sin(th), np.cos(th)]])
     else:
         R=np.array([[1,0,0],[0,1,0],[0,0,1]])
+
+    return R.transpose()
+
+def rotation_matrix_axis_angle(u,theta):
+    '''
+        Computes a matrix which performs a rotation of theta degrees about axis u.
+    '''    
+    #normalize
+    u = np.array(u)
+    u = u/np.sqrt(u[0]**2+u[1]**2+u[2]**2)
+    #rotation angle
+    th = np.radians(theta)
+    print('u',u)
+    #rotation matrix
+    R=np.array([[np.cos(th)+u[0]**2*(1-np.cos(th)), u[0]*u[1]*(1-np.cos(th)) - u[2]*np.sin(th), u[0]*u[2]*(1-np.cos(th)) + u[1]*np.sin(th)],
+       [u[0]*u[1]*(1-np.cos(th)) + u[2]*np.sin(th), np.cos(th)+u[1]**2*(1-np.cos(th)), u[1]*u[2]*(1-np.cos(th)) -u[0]*np.sin(th)],
+       [u[0]*u[2]*(1-np.cos(th))-u[1]*np.sin(th), u[1]*u[2]*(1-np.cos(th)) + u[0]*np.sin(th), np.cos(th) + u[2]**2*(1-np.cos(th))]])
 
     return R.transpose()
 
@@ -139,37 +227,12 @@ def compute_elastic_matrices(zdir, xtal):
     else:
         ValueError('Not a valid crystal system!')
 
-    Cc = np.zeros((3,3,3,3))
-
-    Cc[0,0,0,0] = C11
-    Cc[0,0,1,1], Cc[1,1,0,0] = C12, C12
-    Cc[0,0,2,2], Cc[2,2,0,0] = C13, C13
-    Cc[0,0,1,2], Cc[0,0,2,1], Cc[1,2,0,0], Cc[2,1,0,0] = C14, C14, C14, C14
-    Cc[0,0,2,0], Cc[0,0,0,2], Cc[0,2,0,0], Cc[2,0,0,0] = C15, C15, C15, C15
-    Cc[0,0,0,1], Cc[0,0,1,0], Cc[0,1,0,0], Cc[1,0,0,0] = C16, C16, C16, C16
-
-    Cc[1,1,1,1] = C22
-    Cc[1,1,2,2], Cc[2,2,1,1] = C23, C23
-    Cc[1,1,1,2], Cc[1,1,2,1], Cc[1,2,1,1], Cc[2,1,1,1] = C24, C24, C24, C24
-    Cc[1,1,2,0], Cc[1,1,0,2], Cc[0,2,1,1], Cc[2,0,1,1] = C25, C25, C25, C25
-    Cc[1,1,0,1], Cc[1,1,1,0], Cc[0,1,1,1], Cc[1,0,1,1] = C26, C26, C26, C26
-
-    Cc[2,2,2,2] = C33
-    Cc[2,2,1,2], Cc[2,2,2,1], Cc[1,2,2,2], Cc[2,1,2,2] = C34, C34, C34, C34
-    Cc[2,2,2,0], Cc[2,2,0,2], Cc[0,2,2,2], Cc[2,0,2,2] = C35, C35, C35, C35
-    Cc[2,2,0,1], Cc[2,2,1,0], Cc[0,1,2,2], Cc[1,0,2,2] = C36, C36, C36, C36
-
-    Cc[1,2,1,2], Cc[1,2,2,1], Cc[2,1,1,2], Cc[2,1,2,1] = C44, C44, C44, C44
-    Cc[1,2,2,0], Cc[1,2,0,2], Cc[2,1,2,0], Cc[2,1,0,2] = C45, C45, C45, C45
-    Cc[2,0,1,2], Cc[0,2,1,2], Cc[2,0,2,1], Cc[0,2,2,1] = C45, C45, C45, C45
-    Cc[1,2,0,1], Cc[1,2,1,0], Cc[2,1,0,1], Cc[2,1,1,0] = C46, C46, C46, C46
-    Cc[0,1,1,2], Cc[1,0,1,2], Cc[0,1,2,1], Cc[1,0,2,1] = C46, C46, C46, C46
-
-    Cc[2,0,2,0], Cc[2,0,0,2], Cc[0,2,2,0], Cc[0,2,0,2] = C55, C55, C55, C55
-    Cc[2,0,0,1], Cc[2,0,1,0], Cc[0,2,0,1], Cc[0,2,1,0] = C56, C56, C56, C56
-    Cc[0,1,2,0], Cc[1,0,2,0], Cc[0,1,0,2], Cc[1,0,0,2] = C56, C56, C56, C56
-
-    Cc[0,1,0,1], Cc[0,1,1,0], Cc[1,0,0,1], Cc[1,0,1,0] = C66, C66, C66, C66
+    Cc = matrix2tensor(np.array([[C11, C12, C13, C14, C15, C16],
+                                 [C12, C22, C23, C24, C25, C26],
+                                 [C13, C23, C33, C34, C35, C36],
+                                 [C14, C24, C34, C44, C45, C46],
+                                 [C15, C25, C35, C45, C55, C56],
+                                 [C16, C26, C36, C46, C56, C66]]))
 
     Q = rotation_matrix(zdir,xtal_data['system'])
 
@@ -183,15 +246,7 @@ def compute_elastic_matrices(zdir, xtal):
     Crot = np.tensordot(QQQQ, Cc, axes)
 
     #Assemble the stiffness matrix
-    C = np.array([
-        [Crot[0,0,0,0], Crot[0,0,1,1], Crot[0,0,2,2], Crot[0,0,1,2], Crot[0,0,0,2], Crot[0,0,0,1]],
-        [Crot[1,1,0,0], Crot[1,1,1,1], Crot[1,1,2,2], Crot[1,1,1,2], Crot[1,1,0,2], Crot[1,1,0,1]],
-        [Crot[2,2,0,0], Crot[2,2,1,1], Crot[2,2,2,2], Crot[2,2,1,2], Crot[2,2,0,2], Crot[2,2,0,1]],
-        [Crot[2,1,0,0], Crot[2,1,1,1], Crot[2,1,2,2], Crot[1,2,1,2], Crot[1,2,0,2], Crot[1,2,0,1]],
-        [Crot[2,0,0,0], Crot[2,0,1,1], Crot[2,0,2,2], Crot[2,0,1,2], Crot[0,2,0,2], Crot[2,0,0,1]],
-        [Crot[1,0,0,0], Crot[1,0,1,1], Crot[1,0,2,2], Crot[1,0,1,2], Crot[1,0,0,2], Crot[0,1,0,1]]
-    ]).reshape((6,6))
-
+    C = tensor2matrix(Crot)
 
     C=C*1e11 #in pascal
     S = np.linalg.inv(C)
@@ -203,8 +258,41 @@ def compute_elastic_matrices(zdir, xtal):
 
     return S, C, x_dir, y_dir
 
+def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry):
+    
+    #In-plane rotation
+    Q = rotation_matrix_axis_angle([0,0,1],phi)
+    QQ = np.outer(Q,Q)
+    QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
+    axes = ((0, 2, 4, 6), (0, 1, 2, 3))
+    tensor = np.tensordot(QQQQ, tensor, axes)
+
+    x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
+    y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
+
+    #asymmetry rotation (NB for asymmetry the rotation axis is -y)
+    Q = rotation_matrix_axis_angle([0,-1,0],asymmetry)
+    QQ = np.outer(Q,Q)
+    QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
+    axes = ((0, 2, 4, 6), (0, 1, 2, 3))
+    tensor = np.tensordot(QQQQ, tensor, axes)
+
+    x_dir = np.dot(Q.T,x_dir)
+    y_dir = np.dot(Q.T,y_dir)
+
+    #return tensor, x_dir, y_dir
+    return tensor
+
 if __name__=='__main__':
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([0,1,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+
+
+    C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
+
+    print(np.array2string(tensor2matrix(C),precision=4,suppress_small=True))
+    print('x',x)
+    print('y',y)
+       
     '''
     print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
     print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
