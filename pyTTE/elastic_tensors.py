@@ -258,7 +258,7 @@ def compute_elastic_matrices(zdir, xtal):
 
     return S, C, x_dir, y_dir
 
-def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry):
+def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
     
     #In-plane rotation
     Q = rotation_matrix_axis_angle([0,0,1],phi)
@@ -267,8 +267,8 @@ def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry):
     axes = ((0, 2, 4, 6), (0, 1, 2, 3))
     tensor = np.tensordot(QQQQ, tensor, axes)
 
-    x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
-    y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
+    x_dir = np.dot(Q.T,x_dir)
+    y_dir = np.dot(Q.T,y_dir)
 
     #asymmetry rotation (NB for asymmetry the rotation axis is -y)
     Q = rotation_matrix_axis_angle([0,-1,0],asymmetry)
@@ -280,18 +280,18 @@ def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry):
     x_dir = np.dot(Q.T,x_dir)
     y_dir = np.dot(Q.T,y_dir)
 
-    #return tensor, x_dir, y_dir
-    return tensor
-
+    return tensor, x_dir, y_dir
+    
 if __name__=='__main__':
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    #print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
 
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,1,1],'Si')[1]/1e11,precision=4,suppress_small=True))
 
-    C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
+    #C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
 
-    print(np.array2string(tensor2matrix(C),precision=4,suppress_small=True))
-    print('x',x)
-    print('y',y)
+    #print(np.array2string(tensor2matrix(C),precision=4,suppress_small=True))
+    #print('x',x)
+    #print('y',y)
        
     '''
     print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
