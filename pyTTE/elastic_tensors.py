@@ -176,7 +176,7 @@ def rotation_matrix(hkl,system='cubic'):
 
 def rotation_matrix_axis_angle(u,theta):
     '''
-        Computes a matrix which performs a rotation of theta degrees about axis u.
+        Computes a matrix which performs a rotation of theta degrees counterclockwise about axis u.
     '''    
     #normalize
     u = np.array(u)
@@ -286,9 +286,6 @@ def compute_elastic_matrices(zdir, xtal):
 
     Smatrix = np.linalg.inv(Cmatrix)
 
-    print('Cmatrix\n', np.array2string(Cmatrix,precision=4,suppress_small=True))
-    print('Smatrix\n', np.array2string(Smatrix,precision=4,suppress_small=True))
-
     #convert matrices to tensors
     Cc = matrix2tensor(Cmatrix,'C')
     Ss = matrix2tensor(Smatrix,'S')
@@ -308,10 +305,6 @@ def compute_elastic_matrices(zdir, xtal):
     #Assemble the elastic matrices
     C = tensor2matrix(Crot,'C')
     S = tensor2matrix(Srot,'S')
-
-    print('C\n', np.array2string(C,precision=4,suppress_small=True))
-    print('S\n', np.array2string(S,precision=4,suppress_small=True))
-
 
     C=C*1e11 #in pascal
     S=S*1e-11 #in 1/pascal
