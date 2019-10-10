@@ -147,25 +147,32 @@ def rotation_matrix(hkl,system='cubic'):
         Computes the rotation matrix which aligns the given hkl along z-axis.
         NOTE: works currently only for the cubic systems
         TODO: figure out how to generalize to other systems, preferably by
-        obtaining the crystal directions from the elastic tensors
+        obtaining the crystal directions from the elastic tensors (if possible)
     '''
     if not system == 'cubic':
         raise NotImplementedError('Rotation of non-cubic systems not implemented!')
 
     if hkl[0] or hkl[1]:
         #rotation axis
-        u = -np.array([hkl[1],-hkl[0]])/np.sqrt(hkl[0]**2+hkl[1]**2)
+        u = np.array([hkl[1],-hkl[0]])/np.sqrt(hkl[0]**2+hkl[1]**2)
         #rotation angle
         th = np.arccos(hkl[2]/np.sqrt(hkl[0]**2+hkl[1]**2+hkl[2]**2))
-
-        #rotation matrix
-        R=np.array([[np.cos(th)+u[0]**2*(1-np.cos(th)), u[0]*u[1]*(1-np.cos(th)), u[1]*np.sin(th)],
-           [u[0]*u[1]*(1-np.cos(th)), np.cos(th)+u[1]**2*(1-np.cos(th)), -u[0]*np.sin(th)],
-           [-u[1]*np.sin(th), u[0]*np.sin(th), np.cos(th)]])
     else:
-        R=np.array([[1,0,0],[0,1,0],[0,0,1]])
+        if hkl[2] > 0:
+            #zero deg rotation about -y
+            u = np.array([0,-1])
+            th = 0
+        else:
+            #180 deg rotation about -y
+            u = np.array([0,-1])
+            th = np.pi
 
-    return R.transpose()
+    #rotation matrix
+    R=np.array([[ np.cos(th) + u[0]**2*(1-np.cos(th)),          u[0]*u[1]*(1-np.cos(th)),  u[1]*np.sin(th)],
+                [            u[0]*u[1]*(1-np.cos(th)), np.cos(th)+u[1]**2*(1-np.cos(th)), -u[0]*np.sin(th)],
+                [                    -u[1]*np.sin(th),                   u[0]*np.sin(th),       np.cos(th)]])
+
+    return R
 
 def rotation_matrix_axis_angle(u,theta):
     '''
@@ -176,13 +183,13 @@ def rotation_matrix_axis_angle(u,theta):
     u = u/np.sqrt(u[0]**2+u[1]**2+u[2]**2)
     #rotation angle
     th = np.radians(theta)
-    
-    #rotation matrix
-    R=np.array([[np.cos(th)+u[0]**2*(1-np.cos(th)), u[0]*u[1]*(1-np.cos(th)) - u[2]*np.sin(th), u[0]*u[2]*(1-np.cos(th)) + u[1]*np.sin(th)],
-       [u[0]*u[1]*(1-np.cos(th)) + u[2]*np.sin(th), np.cos(th)+u[1]**2*(1-np.cos(th)), u[1]*u[2]*(1-np.cos(th)) -u[0]*np.sin(th)],
-       [u[0]*u[2]*(1-np.cos(th))-u[1]*np.sin(th), u[1]*u[2]*(1-np.cos(th)) + u[0]*np.sin(th), np.cos(th) + u[2]**2*(1-np.cos(th))]])
 
-    return R.transpose()
+    #rotation matrix
+    R=np.array([[        np.cos(th) + u[0]**2*(1-np.cos(th)), u[0]*u[1]*(1-np.cos(th)) - u[2]*np.sin(th), u[0]*u[2]*(1-np.cos(th)) + u[1]*np.sin(th)],
+                [ u[0]*u[1]*(1-np.cos(th)) + u[2]*np.sin(th),        np.cos(th) + u[1]**2*(1-np.cos(th)), u[1]*u[2]*(1-np.cos(th)) - u[0]*np.sin(th)],
+                [ u[0]*u[2]*(1-np.cos(th)) - u[1]*np.sin(th), u[1]*u[2]*(1-np.cos(th)) + u[0]*np.sin(th),        np.cos(th) + u[2]**2*(1-np.cos(th))]])
+
+    return R
 
 def compute_elastic_matrices(zdir, xtal):
     '''
@@ -279,6 +286,9 @@ def compute_elastic_matrices(zdir, xtal):
 
     Smatrix = np.linalg.inv(Cmatrix)
 
+    print('Cmatrix\n', np.array2string(Cmatrix,precision=4,suppress_small=True))
+    print('Smatrix\n', np.array2string(Smatrix,precision=4,suppress_small=True))
+
     #convert matrices to tensors
     Cc = matrix2tensor(Cmatrix,'C')
     Ss = matrix2tensor(Smatrix,'S')
@@ -299,6 +309,10 @@ def compute_elastic_matrices(zdir, xtal):
     C = tensor2matrix(Crot,'C')
     S = tensor2matrix(Srot,'S')
 
+    print('C\n', np.array2string(C,precision=4,suppress_small=True))
+    print('S\n', np.array2string(S,precision=4,suppress_small=True))
+
+
     C=C*1e11 #in pascal
     S=S*1e-11 #in 1/pascal
 
@@ -306,11 +320,17 @@ def compute_elastic_matrices(zdir, xtal):
     #TODO generalize to non-cubic systems
     x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
     y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
+    z_dir = np.dot(Q.T,np.array([[0,0,1]]).T)
 
     return S, C, x_dir, y_dir
 
-def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
-    
+def rotate_inplane(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
+    '''
+        Rotates the given tensor around the z-axis by phi degrees counterclockwise.
+        x_dir and y_dir are the crystal directions (normalized hkl) along the x- and 
+        y-axes.
+    '''
+
     #In-plane rotation
     Q = rotation_matrix_axis_angle([0,0,1],phi)
     QQ = np.outer(Q,Q)
@@ -318,26 +338,78 @@ def rotate_inplane_and_apply_asymmetry(tensor, phi, asymmetry, x_dir = np.array(
     axes = ((0, 2, 4, 6), (0, 1, 2, 3))
     tensor = np.tensordot(QQQQ, tensor, axes)
 
-    x_dir = np.dot(Q.T,x_dir)
-    y_dir = np.dot(Q.T,y_dir)
+    #calculate the crystal directions along the in-plane axes  
 
-    #asymmetry rotation (NB for asymmetry the rotation axis is -y)
-    Q = rotation_matrix_axis_angle([0,-1,0],asymmetry)
+    #this computes what were the directions of post-rotation x- and y axes 
+    #in terms of the pre-rotated x- and y- coordinates
+    prerot_x_coor = np.dot(Q.T, np.array([[1,0,0]]).T)
+    prerot_y_coor = np.dot(Q.T, np.array([[0,1,0]]).T)
+    
+    #prerotated x(y)-axis aligns with the crystal direction x(y)_dir
+    #and assuming that they are properly normalized, they form an orthonormal basis.
+    #Thus the postrotation x_dir and y_dir are linear combinations of
+    #prerot x_dir and y_dir based on the calculated coordinate transform:
+    new_x_dir = prerot_x_coor[0]*x_dir + prerot_x_coor[1]*y_dir
+    new_y_dir = prerot_y_coor[0]*x_dir + prerot_y_coor[1]*y_dir
+
+    return tensor, new_x_dir, new_y_dir
+
+def apply_asymmetry():
+    '''
+        Rotates the given tensor around the y-axis by phi degrees counterclockwise.
+        This corresponds to the definition of clockwise-positive asymmetry angle in
+        xz-plane as defined in the documentation. x_dir and y_dir are the crystal 
+        directions (normalized hkl) along the x- and y-axes.
+    '''
+
+    #Asymmetric rotation (note that in pyTTE documentation
+    #rotation angle is positive in clockwise direction in
+    #right-handed xz-plane = counterclockwise rotation around y-axis)
+    Q = rotation_matrix_axis_angle([0,1,0],phi)
     QQ = np.outer(Q,Q)
     QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
     axes = ((0, 2, 4, 6), (0, 1, 2, 3))
     tensor = np.tensordot(QQQQ, tensor, axes)
 
-    x_dir = np.dot(Q.T,x_dir)
-    y_dir = np.dot(Q.T,y_dir)
+    #calculate the crystal directions along the in-plane axes  
 
-    return tensor, x_dir, y_dir
+    #this computes what were the directions of post-rotation x- and y axes 
+    #in terms of the pre-rotated x- and y- coordinates
+    prerot_x_coor = np.dot(Q.T, np.array([[1,0,0]]).T)
+    prerot_y_coor = np.dot(Q.T, np.array([[0,1,0]]).T)
+    
+    #prerotated x(y)-axis aligns with the crystal direction x(y)_dir
+    #and assuming that they are properly normalized, they form an orthonormal basis.
+    #Thus the postrotation x_dir and y_dir are linear combinations of
+    #prerot x_dir and y_dir based on the calculated coordinate transform:
+    new_x_dir = prerot_x_coor[0]*x_dir + prerot_x_coor[1]*y_dir
+    new_y_dir = prerot_y_coor[0]*x_dir + prerot_y_coor[1]*y_dir
+
+    return tensor, new_x_dir, new_y_dir
     
 if __name__=='__main__':
     #print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
 
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,1,0],'Si')[0]/1e-11,precision=4))
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,1,0],'Si')[1]/1e11,precision=4))
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[0]/1e-11,precision=4))
+    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[1]/1e11,precision=4))
+
+    S,C,x_dir,y_dir = compute_elastic_matrices([1,1,0],'Si')
+
+    tensor, x_dir, y_dir = rotate_inplane(matrix2tensor(S/1e-11,'S'), -45, x_dir,y_dir)
+    S = tensor2matrix(tensor,'S')
+
+    S36 = S[2,5]
+    S32 = S[2,1]
+    S31 = S[2,0]
+
+    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) + np.pi)/2)
+    print('Angle of steepest gradient: ', max_grad_angle,' deg')
+    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) - np.pi)/2)
+    print('Angle of steepest gradient: ', max_grad_angle,' deg')
+
+    print('In-plane rotation:')
+    print('Crystal direction along x: ',x_dir.T)
+    print('Crystal direction along y: ',y_dir.T)
 
     #C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
 
