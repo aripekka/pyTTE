@@ -287,14 +287,15 @@ def compute_elastic_matrices(zdir, xtal):
     Smatrix = np.linalg.inv(Cmatrix)
 
     #convert matrices to tensors
-    Cc = matrix2tensor(Cmatrix,'C')
-    Ss = matrix2tensor(Smatrix,'S')
+    Crot = matrix2tensor(Cmatrix,'C')
+    Srot = matrix2tensor(Smatrix,'S')
 
     Q = rotation_matrix(zdir,xtal_data['system'])
 
     #Rotate the tensors
     for i in range(4):
-        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
+        Crot = np.tensordot(Q,Crot,axes=((1,),(i,)))
+        Srot = np.tensordot(Q,Srot,axes=((1,),(i,)))
 
     #Assemble the elastic matrices
     C = tensor2matrix(Crot,'C')
@@ -339,7 +340,7 @@ def rotate_inplane(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array(
 
     return tensor, new_x_dir, new_y_dir
 
-def apply_asymmetry():
+def apply_asymmetry(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
     '''
         Rotates the given tensor around the y-axis by phi degrees counterclockwise.
         This corresponds to the definition of clockwise-positive asymmetry angle in
@@ -378,7 +379,7 @@ if __name__=='__main__':
 
     S,C,x_dir,y_dir = compute_elastic_matrices([1,1,0],'Si')
 
-    tensor, x_dir, y_dir = rotate_inplane(matrix2tensor(S/1e-11,'S'), -45, x_dir,y_dir)
+    tensor, x_dir, y_dir = rotate_inplane(matrix2tensor(S/1e-11,'S'), 45, x_dir,y_dir)
     S = tensor2matrix(tensor,'S')
 
     S36 = S[2,5]
