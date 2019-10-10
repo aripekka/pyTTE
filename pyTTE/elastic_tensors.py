@@ -293,14 +293,8 @@ def compute_elastic_matrices(zdir, xtal):
     Q = rotation_matrix(zdir,xtal_data['system'])
 
     #Rotate the tensors
-    #New faster version according to
-    #http://stackoverflow.com/questions/4962606/fast-tensor-rotation-with-numpy
-
-    QQ = np.outer(Q,Q)
-    QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
-    axes = ((0, 2, 4, 6), (0, 1, 2, 3))
-    Crot = np.tensordot(QQQQ, Cc, axes)
-    Srot = np.tensordot(QQQQ, Ss, axes)
+    for i in range(4):
+        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
 
     #Assemble the elastic matrices
     C = tensor2matrix(Crot,'C')
@@ -326,10 +320,8 @@ def rotate_inplane(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array(
 
     #In-plane rotation
     Q = rotation_matrix_axis_angle([0,0,1],phi)
-    QQ = np.outer(Q,Q)
-    QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
-    axes = ((0, 2, 4, 6), (0, 1, 2, 3))
-    tensor = np.tensordot(QQQQ, tensor, axes)
+    for i in range(4):
+        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
 
     #calculate the crystal directions along the in-plane axes  
 
@@ -359,10 +351,8 @@ def apply_asymmetry():
     #rotation angle is positive in clockwise direction in
     #right-handed xz-plane = counterclockwise rotation around y-axis)
     Q = rotation_matrix_axis_angle([0,1,0],phi)
-    QQ = np.outer(Q,Q)
-    QQQQ = np.outer(QQ,QQ).reshape(4*Q.shape)
-    axes = ((0, 2, 4, 6), (0, 1, 2, 3))
-    tensor = np.tensordot(QQQQ, tensor, axes)
+    for i in range(4):
+        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
 
     #calculate the crystal directions along the in-plane axes  
 
