@@ -1,6 +1,6 @@
 __author__ = 'Ari-Pekka Honkanen'
 __license__ = 'MIT'
-__date__ = '17/11/2017'
+__date__ = '05/02/2020'
 
 from setuptools import setup
 #
@@ -10,7 +10,7 @@ from setuptools import setup
 
 
 setup(name='pyTTE',
-      version='0.1.11',
+      version='0.2alpha',
       description='Package to compute X-ray diffraction curves of bent crystals by numerically solving the Takagi-Taupin equations.',
       author='Ari-Pekka Honkanen',
       author_email='honkanen.ap@gmail.com',
