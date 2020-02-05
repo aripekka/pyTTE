@@ -38,8 +38,11 @@ def matrix2tensor(matrix,mtype):
     Converts the elastic matrices using Voigt notation to elastic tensors.
 
     Input:
-    matrix = 6x6 matrix in Voigt notation
-    mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+        matrix = 6x6 matrix in Voigt notation
+        mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+
+    Output:
+        T = 3x3x3x3 stiffness or compliance tensor
     '''
 
     T = np.zeros((3,3,3,3))
@@ -111,18 +114,22 @@ def matrix2tensor(matrix,mtype):
 
     return T
 
-def tensor2matrix(tensor, mtype):
+def tensor2matrix(tensor, ttype):
     '''
     Converts the elastic tensors to matrices using Voigt notation.
 
     Input:
-    matrix = 3x3x3x3 elastic tensor
-    mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+        tensor = 3x3x3x3 elastic tensor
+        mtype = 'C' or 'S' for stiffness or compliance tensor, respectively
+
+    Output:
+        matrix = 6x6 stiffness or compliance matrix
+
     '''
 
     T = tensor
 
-    if mtype == 'C':
+    if ttype == 'C':
         #stiffness matrix
         matrix = np.array([
             [T[0,0,0,0], T[0,0,1,1], T[0,0,2,2], T[0,0,1,2], T[0,0,0,2], T[0,0,0,1]],
@@ -132,7 +139,7 @@ def tensor2matrix(tensor, mtype):
             [T[2,0,0,0], T[2,0,1,1], T[2,0,2,2], T[2,0,1,2], T[0,2,0,2], T[2,0,0,1]],
             [T[1,0,0,0], T[1,0,1,1], T[1,0,2,2], T[1,0,1,2], T[1,0,0,2], T[0,1,0,1]]])
 
-    elif mtype == 'S':
+    elif ttype == 'S':
         #compliance matrix
         matrix = np.array([
             [  T[0,0,0,0],   T[0,0,1,1],   T[0,0,2,2], 2*T[0,0,1,2], 2*T[0,0,0,2], 2*T[0,0,0,1]],
@@ -142,7 +149,7 @@ def tensor2matrix(tensor, mtype):
             [2*T[2,0,0,0], 2*T[2,0,1,1], 2*T[2,0,2,2], 4*T[2,0,1,2], 4*T[0,2,0,2], 4*T[2,0,0,1]],
             [2*T[1,0,0,0], 2*T[1,0,1,1], 2*T[1,0,2,2], 4*T[1,0,1,2], 4*T[1,0,0,2], 4*T[0,1,0,1]]])
     else:
-        raise Exception('Invalid elastic matrix type!')
+        raise Exception('Invalid elastic tensor type!')
    
     return matrix
     
