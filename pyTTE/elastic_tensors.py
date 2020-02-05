@@ -3,30 +3,34 @@ import numpy as np
 
 #Elastic constants for single crystals in units 10^11 Pa
 #Source: CRC Handbook of Chemistry and Physics, 82nd edition
-CRYSTALS = {
-            'Si' : {'system' : 'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
-            'Ge' : {'system' : 'cubic', 'C11' : 1.2835, 'C12' : 0.4823, 'C44' : 0.6666},
-            'CaMoO4' : {'system' : 'tetragonal', 'C11' : 1.447, 'C12' : 0.664,\
-                        'C13' : 0.455, 'C16' : 0.134, 'C33':1.265,'C44':0.369,'C66':0.451},
-            'CaCO3'  : {'system' : 'orthorhombic', 'C11' : 1.5958, 'C12' : 0.3663, 'C13' : 0.0197,\
-                        'C22' : 0.8697,'C23':0.1597, 'C33':0.8503,'C44' : 0.4132,'C55':0.2564,'C66':0.4274},
-            'aegirine' : {'system' : 'monoclinic', 'C11' : 1.858, 'C12' : 0.685, 'C13' : 0.707, 'C15':0.098,'C22':1.813,\
-                         'C23':0.626, 'C25':0.094,'C33':2.344,'C35':0.214,'C44':0.629,'C46':0.077,'C55':0.510,'C66':0.474},
-            'Be' : {'system' : 'hexagonal', 'C11': 2.923, 'C12':0.267, 'C13':0.140, 'C33':3.364,'C55':1.625},
-            'quartz' : {'system': 'trigonal', 'C11': 0.8670, 'C12':0.0704, 'C13':0.1191, 'C14':-0.1804,'C33':1.0575,'C44':0.5820},
+#
+#Contains only (some) crystals available in xraylib
 
-            'test_cubic' : {'system' : 'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
-            'test_tetragonal' : {'system' : 'tetragonal', 'C11' : 11, 'C12' : 12,'C13' : 13, 'C16' : 16, 'C33':33,'C44':44,'C66':66},
-            'test_orthorhombic'  : {'system' : 'orthorhombic', 'C11':11,'C12':12,'C13':13,'C22':22,'C23':23,'C33':33,'C44' : 44,'C55':55,'C66':66},
-            'test_monoclinic' : {'system' : 'monoclinic', 'C11':11,'C12' :12,'C13':13,'C15':15,'C22':22,'C23':23,'C25':25,'C33':33,'C35':35,'C44':44,'C46':46,'C55':55,'C66':66},
-            'test_hexagonal' : {'system' : 'hexagonal', 'C11':11, 'C12':12, 'C13':13, 'C33':33,'C55':55},
-            'test_trigonal' : {'system': 'trigonal', 'C11':11,'C12':12,'C13':13,'C14':14,'C33':33,'C44':44},
-            'test_triclinic': {'system':'triclinic', 'C11':11,'C12':12,'C13':13,'C14':14,'C15':15,'C16':16,\
-                                                     'C22':22,'C23':23,'C24':24,'C25':25,'C26':26,\
-                                                     'C33':33,'C34':34,'C35':35,'C36':36,\
-                                                     'C44':44,'C45':45,'C46':46,\
-                                                     'C55':55,'C56':56,\
-                                                     'C66':66}
+CRYSTALS = {
+            'AlphaQuartz' : {'system' :  'trigonal', 'C11' : 0.8670, 'C12' : 0.0704, 'C13' : 0.1191, 'C14' : -0.1804, 'C33' : 1.0575, 'C44' : 0.5820},
+            'Be'          : {'system' : 'hexagonal', 'C11' :  2.923, 'C12' :  0.267, 'C13' :  0.140, 'C33' :   3.364, 'C55' :  1.625},
+            'Beryl'       : {'system' : 'hexagonal', 'C11' :  2.800, 'C12' :  0.990, 'C13' :  0.670, 'C33' :   2.480, 'C55' :  0.658},
+            'Copper'      : {'system' :     'cubic', 'C11' :  1.683, 'C12' :  1.221, 'C44' :  0.757},
+
+            'Ge'          : {'system' :     'cubic', 'C11' : 1.2835, 'C12' : 0.4823, 'C44' : 0.6666},
+            'LiF'         : {'system' :     'cubic', 'C11' : 1.1397, 'C12' : 0.4767, 'C44' : 0.6364},
+            'Sapphire'    : {'system' :  'trigonal', 'C11' : 4.9735, 'C12' : 1.6397, 'C13' : 1.1220, 'C14' : -0.2358, 'C33' : 4.9911, 'C44' : 1.4739},
+            'Si'          : {'system' :     'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
+
+
+            'test_cubic'        : {'system' :        'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
+            'test_tetragonal'   : {'system' :   'tetragonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C16' : 16, 'C33' : 33, 'C44' : 44, 'C66' : 66},
+            'test_orthorhombic' : {'system' : 'orthorhombic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C22' : 22, 'C23' : 23, 'C33' : 33, 'C44' : 44, 'C55' : 55, 'C66' : 66},
+            'test_monoclinic'   : {'system' :   'monoclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C15' : 15, 'C22' : 22, 'C23' : 23, 'C25' : 25, 
+                                                              'C33' : 33, 'C35' : 35, 'C44' : 44, 'C46' : 46, 'C55' : 55, 'C66' : 66},
+            'test_hexagonal'    : {'system' :    'hexagonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C33' : 33, 'C55' : 55},
+            'test_trigonal'     : {'system' :     'trigonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C33' : 33, 'C44' : 44},
+            'test_triclinic'    : {'system' :    'triclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C15' : 15, 'C16' : 16,
+                                                              'C22' : 22, 'C23' : 23, 'C24' : 24, 'C25' : 25, 'C26' : 26,
+                                                              'C33' : 33, 'C34' : 34, 'C35' : 35, 'C36' : 36,
+                                                              'C44' : 44, 'C45' : 45, 'C46' : 46,
+                                                              'C55' : 55, 'C56' : 56,
+                                                              'C66' : 66}
            }
 
 def matrix2tensor(matrix,mtype):
