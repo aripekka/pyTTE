@@ -8,7 +8,7 @@
 
 
 \author{Ari-Pekka Honkanen}
-\title{PyTTE: The Technical Document}
+\title{PyTTE: The Technical Document\\Version 0.2}
 \begin{document}
 \maketitle
 \section{Introduction}
@@ -122,6 +122,24 @@ and thus
 \frac{\partial u_z}{\partial z} = \frac{\nu}{1-\nu}\left(\frac{1}{R_x}+\frac{1}{R_y}\right)z.
 \end{equation}
 Finally, since PyTTE assumes the top surface is at $z=0$, we need to shift the $z$-axis $z \rightarrow z + t/2 $
+\section{Crystallography and elastic constants}
+\subsection{Crystallographic vectors}
+For crystallographic data, \textsc{pyTTE} v. 0.2 relies on the internal library of \textsc{xraylib}\cite{Schoonjans_2011}. The direct primitive vectors $\mathbf{a}_1$, $\mathbf{a}_2$, and $\mathbf{a}_3$ given in a Cartesian system are calculated from the lattice parameters $a$,$b$,$c$, $\alpha$, $\beta$, and $\gamma$ as follows
+\begin{equation}
+\mathbf{a}_1 = a \left[\begin{matrix} 1 \\ 0 \\ 0 \end{matrix}\right] \qquad
+\mathbf{a}_2 = b \left[\begin{matrix} \cos \gamma \\ \sin \gamma \\ 0 \end{matrix}\right] \qquad
+\mathbf{a}_3 = \frac{c}{\sin \gamma} \left[\begin{matrix} \cos \beta \sin \gamma \\ \cos \alpha - \cos\beta \cos\gamma \\ 
+\sqrt{\sin^2 \gamma - \cos^2 \alpha - \cos^2 \beta + 2 \cos \alpha \cos \beta \cos \gamma} \end{matrix}\right]
+\end{equation}
+The reciprocal primitive vectors are calculated according to
+\begin{equation}
+\mathbf{b}_1 = 2\pi \frac{\mathbf{a}_2 \times \mathbf{a}_3}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|} \qquad
+\mathbf{b}_2 = 2\pi \frac{\mathbf{a}_3 \times \mathbf{a}_1}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|} \qquad
+\mathbf{b}_3 = 2\pi \frac{\mathbf{a}_1 \times \mathbf{a}_2}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|}.
+\end{equation}
+
+
+
 \bibliographystyle{unsrt}
 \bibliography{documentation}
 \end{document}
