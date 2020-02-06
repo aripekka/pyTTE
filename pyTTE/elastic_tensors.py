@@ -19,20 +19,42 @@ CRYSTALS = {
             'Si'          : {'system' :     'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
 
 
-            'test_cubic'        : {'system' :        'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
-            'test_tetragonal'   : {'system' :   'tetragonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C16' : 16, 'C33' : 33, 'C44' : 44, 'C66' : 66},
-            'test_orthorhombic' : {'system' : 'orthorhombic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C22' : 22, 'C23' : 23, 'C33' : 33, 'C44' : 44, 'C55' : 55, 'C66' : 66},
-            'test_monoclinic'   : {'system' :   'monoclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C15' : 15, 'C22' : 22, 'C23' : 23, 'C25' : 25, 
-                                                              'C33' : 33, 'C35' : 35, 'C44' : 44, 'C46' : 46, 'C55' : 55, 'C66' : 66},
-            'test_hexagonal'    : {'system' :    'hexagonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C33' : 33, 'C55' : 55},
-            'test_trigonal'     : {'system' :     'trigonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C33' : 33, 'C44' : 44},
-            'test_triclinic'    : {'system' :    'triclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C15' : 15, 'C16' : 16,
-                                                              'C22' : 22, 'C23' : 23, 'C24' : 24, 'C25' : 25, 'C26' : 26,
-                                                              'C33' : 33, 'C34' : 34, 'C35' : 35, 'C36' : 36,
-                                                              'C44' : 44, 'C45' : 45, 'C46' : 46,
-                                                              'C55' : 55, 'C56' : 56,
-                                                              'C66' : 66}
+            'prototype_cubic'        : {'system' :        'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
+            'prototype_tetragonal'   : {'system' :   'tetragonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C16' : 16, 'C33' : 33, 'C44' : 44, 'C66' : 66},
+            'prototype_orthorhombic' : {'system' : 'orthorhombic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C22' : 22, 'C23' : 23, 'C33' : 33, 'C44' : 44, 'C55' : 55, 'C66' : 66},
+            'prototype_monoclinic'   : {'system' :   'monoclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C15' : 15, 'C22' : 22, 'C23' : 23, 'C25' : 25, 
+                                                                   'C33' : 33, 'C35' : 35, 'C44' : 44, 'C46' : 46, 'C55' : 55, 'C66' : 66},
+            'prototype_hexagonal'    : {'system' :    'hexagonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C33' : 33, 'C55' : 55},
+            'prototype_trigonal'     : {'system' :     'trigonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C33' : 33, 'C44' : 44},
+            'prototype_triclinic'    : {'system' :    'triclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C15' : 15, 'C16' : 16,
+                                                                   'C22' : 22, 'C23' : 23, 'C24' : 24, 'C25' : 25, 'C26' : 26,
+                                                                   'C33' : 33, 'C34' : 34, 'C35' : 35, 'C36' : 36,
+                                                                   'C44' : 44, 'C45' : 45, 'C46' : 46,
+                                                                   'C55' : 55, 'C56' : 56,
+                                                                   'C66' : 66}
            }
+
+def list_crystals(remove_prototypes = True):
+    '''
+    Returns the list of crystals with elastic data available.
+
+    Input:
+        remove_prototypes = boolean, whether omit prototypes for crystal data entries from the 
+                            list (default: True)
+    Output:
+        xtal_str_list = list of available crystal strings to be used with crystal_vectors()
+                        or elastic_matrices(). When the crystallographic data is available 
+                        in xraylib, the strings are congruent.
+    '''
+
+    xtal_str_list = list(CRYSTALS.keys())
+
+    if remove_prototypes:
+        for i in range(len(xtal_str_list)-1,-1,-1):
+            if xtal_str_list[i][:10] == 'prototype_':
+                xtal_str_list.pop(i) 
+
+    return xtal_str_list
 
 def crystal_vectors(crystal_str):
     '''
@@ -41,7 +63,8 @@ def crystal_vectors(crystal_str):
     perpendicular to x-axis and a2 to lie in xy-plane.
 
     Input:
-        crystal_str = string representation of the crystal as in xraylib
+        crystal_str = string representation of the crystal as in xraylib. Equal to ones given
+                      by list_crystals() when available.
     Output:
         a_matrix = matrix containing the direct primitive vectors as columns
         b_matrix = matrix containing the reciprocal primitive vectors as columns
@@ -419,6 +442,9 @@ if __name__=='__main__':
     #print('y',y)
     '''
 
+    print(list_crystals())
+
+    '''
     for i in CRYSTALS.keys():
         if i[:4] == 'test':
             print(i)       
@@ -426,7 +452,7 @@ if __name__=='__main__':
             S,C,x_dir,y_dir = compute_elastic_matrices([0,0,1],'test_cubic')
             print(Cnew - C/1e11)
             print('')
-
+    '''
     '''
     print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
     print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
