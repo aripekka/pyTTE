@@ -34,6 +34,9 @@ CRYSTALS = {
                                                                    'C66' : 66}
            }
 
+CRYSTALS['Si2'] = CRYSTALS['Si']
+CRYSTALS['Si_NIST'] = CRYSTALS['Si']
+
 def list_crystals(remove_prototypes = True):
     '''
     Returns the list of crystals with elastic data available.
