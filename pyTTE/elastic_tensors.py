@@ -196,23 +196,20 @@ def tensor2matrix(tensor, ttype):
    
     return matrix
     
-def rotation_matrix(hkl,system='cubic'):
+def rotation_matrix(h):
     '''
-        Computes the rotation matrix which aligns the given hkl along z-axis.
-        NOTE: works currently only for the cubic systems
-        TODO: figure out how to generalize to other systems, preferably by
-        obtaining the crystal directions from the elastic tensors (if possible)
+    Computes the rotation matrix which aligns the given vector along z-axis.
+    For example, for reflection (hkl), h = h*b1 + k*b2 + l*b3, where bi
+    are the primitive reciprocal vectors.
     '''
-    if not system == 'cubic':
-        raise NotImplementedError('Rotation of non-cubic systems not implemented!')
 
-    if hkl[0] or hkl[1]:
+    if h[0] or h[1]:
         #rotation axis
-        u = np.array([hkl[1],-hkl[0]])/np.sqrt(hkl[0]**2+hkl[1]**2)
+        u = np.array([h[1],-h[0]])/np.sqrt(h[0]**2+h[1]**2)
         #rotation angle
-        th = np.arccos(hkl[2]/np.sqrt(hkl[0]**2+hkl[1]**2+hkl[2]**2))
+        th = np.arccos(h[2]/np.sqrt(h[0]**2+h[1]**2+h[2]**2))
     else:
-        if hkl[2] > 0:
+        if h[2] > 0:
             #zero deg rotation about -y
             u = np.array([0,-1])
             th = 0
