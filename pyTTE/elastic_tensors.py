@@ -1,6 +1,7 @@
 from __future__ import division, print_function
 import numpy as np
 import xraylib
+from . import rotation_matrix as Q
 
 #Elastic constants for single crystals in units 10^11 Pa
 #Source: CRC Handbook of Chemistry and Physics, 82nd edition
@@ -193,7 +194,6 @@ def tensor2matrix(tensor, ttype):
 
     Output:
         matrix = 6x6 stiffness or compliance matrix
-
     '''
 
     T = tensor
@@ -291,176 +291,36 @@ def elastic_matrices(xtal_str):
 
     return C_matrix, S_matrix
 
-def compute_elastic_matrices(zdir, xtal):
+def rotate_elastic_tensor(tensor, rotation_matrix):
     '''
-        Computes the compliance and stiffness matrices S and C a given z-direction.
-        The x- and y-directions are determined automatically
-        returns: S, C, x_dir, y_dir
+    Performs the rotation described by rotation_matrix to the given elastic tensor.
+
+    Input:
+        tensor = 3x3x3x3 elastic tensor
+        rotation_matrix = 3x3 rotation matrix
+    Output:
+        tensor_rot = rotated tensor
     '''
-
-    try:
-        xtal_data=CRYSTALS[xtal]
-    except KeyError:
-        raise KeyError("Elastic parameters for '"+str(xtal)+"' not found!")
-       
-    if xtal_data['system'] == 'cubic':
-        C11, C12, C44 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
-        C13, C14, C15, C16 = C12, 0, 0, 0
-        C22, C23, C24, C25, C26 = C11, C12, 0, 0, 0
-        C33, C34, C35, C36 = C11, 0, 0, 0
-        C45, C46 = 0, 0
-        C55, C56 = C44, 0
-        C66 = C44
-    elif xtal_data['system'] == 'tetragonal':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C16 = xtal_data['C16']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C66 = xtal_data['C66']
-        C14, C15 = 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, 0, 0, -C16
-        C34, C35, C36 = 0, 0, 0
-        C45, C46 = 0, 0
-        C55, C56 = C44, 0
-    elif xtal_data['system'] == 'orthorhombic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C22, C23 = xtal_data['C22'], xtal_data['C23']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C55 = xtal_data['C55']
-        C66 = xtal_data['C66']
-        C14, C15, C16 = 0,0,0
-        C24, C25, C26 = 0,0,0
-        C34, C35, C36 = 0,0,0
-        C45, C46 = 0,0
-        C56 = 0
-    elif xtal_data['system'] == 'monoclinic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C15 = xtal_data['C15']
-        C22, C23, C25 = xtal_data['C22'], xtal_data['C23'], xtal_data['C25']
-        C33, C35 = xtal_data['C33'], xtal_data['C35']
-        C44, C46 = xtal_data['C44'], xtal_data['C46']
-        C55 = xtal_data['C55']
-        C66 = xtal_data['C66']
-        C14, C16, C24, C26, C34, C36, C45, C56 = 0,0,0,0,0,0,0,0
-    elif xtal_data['system'] == 'hexagonal':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C33  = xtal_data['C33']
-        C55 = xtal_data['C55']
-        C14, C15, C16 = 0, 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, 0, 0, 0
-        C34, C35, C36 = 0, 0, 0
-        C44, C45, C46 = C55, 0, 0
-        C56 =  0
-        C66 = (C11-C12)/2
-    elif xtal_data['system'] == 'trigonal':
-        C11, C12, C13, C14 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C14']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C15, C16 = 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, -C14, 0, 0
-        C34, C35, C36 = 0, 0, 0
-        C45, C46 =  0, 0
-        C55, C56 =  C44, C14
-        C66 = (C11-C12)/2
-    elif xtal_data['system'] == 'triclinic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C14, C15, C16 = xtal_data['C14'], xtal_data['C15'], xtal_data['C16']
-        C22, C23, C24 = xtal_data['C22'], xtal_data['C23'], xtal_data['C24']
-        C25, C26 = xtal_data['C25'], xtal_data['C26']
-        C33, C34, C35 = xtal_data['C33'], xtal_data['C34'], xtal_data['C35']
-        C36 =  xtal_data['C36']
-        C44, C45, C46 = xtal_data['C44'], xtal_data['C45'], xtal_data['C46']
-        C55, C56 = xtal_data['C55'], xtal_data['C56']
-        C66 = xtal_data['C66']
-    else:
-        ValueError('Not a valid crystal system!')
-
-    #Elastic matrices of the non-rotated coordinate system
-    Cmatrix = np.array([[C11, C12, C13, C14, C15, C16],
-                        [C12, C22, C23, C24, C25, C26],
-                        [C13, C23, C33, C34, C35, C36],
-                        [C14, C24, C34, C44, C45, C46],
-                        [C15, C25, C35, C45, C55, C56],
-                        [C16, C26, C36, C46, C56, C66]])
-
-    Smatrix = np.linalg.inv(Cmatrix)
-
-    #convert matrices to tensors
-    Crot = matrix2tensor(Cmatrix,'C')
-    Srot = matrix2tensor(Smatrix,'S')
-
-    #Q = rotation_matrix(zdir,xtal_data['system'])
-    Q = rotation_matrix(zdir)
-
-    #Rotate the tensors
+    tensor_rot = tensor
     for i in range(4):
-        Crot = np.tensordot(Q,Crot,axes=((1,),(i,)))
-        Srot = np.tensordot(Q,Srot,axes=((1,),(i,)))
+        tensor_rot = np.tensordot(rotation_matrix,tensor_rot,axes=((1,),(i,)))
 
-    #Assemble the elastic matrices
-    C = tensor2matrix(Crot,'C')
-    S = tensor2matrix(Srot,'S')
+    return tensor_rot
 
-    C=C*1e11 #in pascal
-    S=S*1e-11 #in 1/pascal
-
-    #calculate x and y directions
-    #TODO generalize to non-cubic systems
-    x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
-    y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
-    z_dir = np.dot(Q.T,np.array([[0,0,1]]).T)
-
-    return S, C, x_dir, y_dir
-    
-if __name__=='__main__':
+def rotate_elastic_matrix(matrix, mtype, rotation_matrix):
     '''
-    #print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
+    Performs the rotation described by rotation_matrix to the given elastic matrix.
 
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[0]/1e-11,precision=4))
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[1]/1e11,precision=4))
-
-    S,C,x_dir,y_dir = compute_elastic_matrices([1,1,0],'Si')
-
-    tensor, x_dir, y_dir = rotate_inplane(matrix2tensor(S/1e-11,'S'), 45, x_dir,y_dir)
-    S = tensor2matrix(tensor,'S')
-
-    S36 = S[2,5]
-    S32 = S[2,1]
-    S31 = S[2,0]
-
-    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) + np.pi)/2)
-    print('Angle of steepest gradient: ', max_grad_angle,' deg')
-    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) - np.pi)/2)
-    print('Angle of steepest gradient: ', max_grad_angle,' deg')
-
-    print('In-plane rotation:')
-    print('Crystal direction along x: ',x_dir.T)
-    print('Crystal direction along y: ',y_dir.T)
-
-    #C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
-
-    #print(np.array2string(tensor2matrix(C),precision=4,suppress_small=True))
-    #print('x',x)
-    #print('y',y)
+    Input:
+        matrix = 6x6 elastic matrix
+        mtype = 'C' if the matrix to be rotated is the stiffness matrix 
+                or 'S' if the compliance matrix
+        rotation_matrix = 3x3 rotation matrix
+    Output:
+        matrix_rot = rotated matrix
     '''
+    tensor = matrix2tensor(matrix,mtype)
+    tensor_rot = rotate_elastic_tensor(tensor, rotation_matrix)
+    matrix_rot = tensor2matrix(tensor_rot,mtype)
 
-    print(list_crystals())
-
-    '''
-    for i in CRYSTALS.keys():
-        if i[:4] == 'test':
-            print(i)       
-            Cnew, Snew = elastic_matrices('test_cubic')
-            S,C,x_dir,y_dir = compute_elastic_matrices([0,0,1],'test_cubic')
-            print(Cnew - C/1e11)
-            print('')
-    '''
-    '''
-    print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
-    print('Monoclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_monoclinic')[1]/1e11,precision=4,suppress_small=True))
-    print('Hexagonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_hexagonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Trigonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_trigonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Triclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_triclinic')[1]/1e11,precision=4,suppress_small=True))
-    '''
+    return matrix_rot
