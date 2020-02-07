@@ -78,5 +78,11 @@ class Quantity:
         value = self.value*UNITS[self.unit][1]/UNITS[unit][1]
         return value
 
+    def type(self):
+        '''
+        Returns the str of the type of the quantity. 
+        '''
+        return UNITS[self.unit][0]
+
     def __str__(self):
         return str(self.value)+' '+self.unit
