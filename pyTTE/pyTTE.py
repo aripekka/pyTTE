@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import division, print_function
 import sys
 import os
@@ -7,7 +9,167 @@ import numpy as np
 from scipy.integrate import ode
 from scipy.constants.codata import physical_constants
 
+from .quantity import Quantity
+from .crystal_vectors import crystal_vectors
+
 import xraylib
+
+class TTcrystal:
+    '''
+    Contains all the information about the crystal and its depth-dependent deformation.
+    '''
+
+    def __init__(self, crystal_str, hkl, thickness, **kwargs):
+        '''
+        Initializes the TTcrystal instance.
+
+        Input:
+            crystal_str = string representation of the crystal in compliance with xraylib
+            hkl         = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
+            thickness   = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
+        Optional Inputs:
+            asymmetry   = clockwise-positive asymmetry angle wrapped in a Quantity instance.
+                          0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+        '''
+
+        #used to prevent recalculation of the deformation in parameter set functions during init
+        self._initialized = False
+
+        self.change_crystal(crystal_str)
+        self.set_reflection(hkl)
+        self.set_thickness(thickness)
+
+        if 'asymmetry' in kwargs.keys():
+            self.set_asymmetry(kwargs['asymmetry'])
+        else:
+            self.asymmetry = Quantity(0,'deg')            
+
+        self.update_rotations_and_deformation()
+        self._initialized = True
+
+    def change_crystal(self, crystal_str):
+        '''
+        Changes the crystal keeping other parameters the same. Recalculates
+        the crystallographic parameters. The effect on the deformation depends 
+        on its previous initialization:
+            isotropic -> no change
+            automatic anisotropic elastic matrices -> update to new crystal
+            manual anisotropic elastic matrices    -> clear
+
+        Input:
+            crystal_str = string representation of the crystal in compliance with xraylib
+        '''
+
+        #Check whether the crystal_str is valid and available in xraylib
+        if type(crystal_str) == type(''):
+            if crystal_str in xraylib.Crystal_GetCrystalsList():
+                self.crystal_data = xraylib.Crystal_GetCrystal(crystal_str)
+            else:
+                raise ValueError('The given crystal_str not found in xraylib!')
+        else:
+            raise ValueError('Input argument crystal_str is not type str!')
+
+        #calculate the direct and reciprocal primitive vectors 
+        self.direct_primitives, self.reciprocal_primitives = crystal_vectors(self.crystal_data)
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def set_reflection(self, hkl):
+        '''
+        Set a new reflection and calculate the new crystallographic data and deformation
+        for rotated crystal.
+
+        Input:
+            crystal_str = string representation of the crystal in compliance with xraylib
+        '''
+
+        #Check whether the hkl is valid
+        hkl_list = list(hkl)
+        if len(hkl_list) == 3:
+            for i in range(3):
+                if not type(hkl_list[i]) in [type(1),type(1.0)]:
+                    raise ValueError('Elements of hkl have to be of type int or float!')
+            self.hkl = hkl_list               
+        else:
+            raise ValueError('Input argument hkl does not have 3 elements!')
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def set_thickness(self, thickness):
+        '''
+        Set crystal thickness and recalculate the deformation field.
+
+        Input:
+            thickness = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
+        '''
+
+        #Check that the crystal thickness is valid
+        if isinstance(thickness,Quantity) and thickness.type() == 'length':
+            self.thickness = Quantity(thickness.value,thickness.unit)
+        else:
+            raise ValueError('Thickness has to be a Quantity instance of type length!')
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def set_asymmetry(self, asymmetry):
+        '''
+        Set crystal thickness and recalculate the deformation field.
+
+        Input:
+            asymmetry = clockwise-positive asymmetry angle wrapped in a Quantity instance 0 
+                        for symmetric Bragg case (default), 90 deg for symmetric Laue
+        '''
+
+        if isinstance(asymmetry,Quantity) and asymmetry.type() == 'angle':
+            self.asymmetry = Quantity(asymmetry.value,asymmetry.unit)
+        else:
+            raise ValueError('Asymmetry angle has to be a Quantity instance of type angle!')
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def update_rotations_and_deformation(self):
+        print('HELP! I am update_rotations_and_deformation() and I am not implemented yet!')
+
+    def __str__(self):
+        return 'Crystal: ' + self.crystal_data['name'] + '\n' +\
+               'Crystallographic parameters:\n' +\
+               '    a = ' + str(self.crystal_data['a']*0.1)[:8] + ' nm,  b = ' + str(self.crystal_data['b']*0.1)[:8] + ' nm,  c = ' + str(self.crystal_data['c']*0.1)[:8] + ' nm\n'+\
+               '    alpha = ' + str(self.crystal_data['alpha']) + ' deg,  beta = ' + str(self.crystal_data['beta']) + ' nm,  gamma = ' + str(self.crystal_data['gamma']) + ' deg\n'+\
+               'Direct primitive vectors (columns, in nm):\n'+ np.array2string(0.1*self.direct_primitives,precision=4,suppress_small=True)+'\n'+\
+               'Reciprocal primitive vectors (columns, in 1/nm):\n'+ np.array2string(10*self.reciprocal_primitives,precision=4,suppress_small=True)+'\n'+\
+               'Reflection: '+str(self.hkl)+'\n'+\
+               'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
+               'Thickness: ' + str(self.thickness)
+
+'''
+class TTscan:
+    
+    #Class containing all the parameters for the energy or angle scan to be simulated.
+    
+
+    def __init__(self,**kwargs):
+
+
+        #Validate inputs
+       
+
+        try:
+            if type(kwargs['polarization']) == type('') and kwargs['polarization'].lower() in ['sigma','s']:
+                self.polarization = 'sigma'
+            elif type(kwargs['polarization']) == type('') and kwargs['polarization'].lower() in ['pi','p']:
+                self.polarization = 'pi'
+            else:
+                raise ValueError("Invalid polarization! Choose either 'sigma' or 'pi'.")
+        except :
+'''
 
 def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,thickness,displacement_jacobian = None,debyeWaller=1.0,min_int_step=1e-10):
     '''
