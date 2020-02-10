@@ -19,30 +19,53 @@ class TTcrystal:
     Contains all the information about the crystal and its depth-dependent deformation.
     '''
 
-    def __init__(self, crystal_str, hkl, thickness, **kwargs):
+    def __init__(self, filepath = None, **kwargs):
         '''
-        Initializes the TTcrystal instance.
+        Initializes the TTcrystal instance. The instance can be initialized either by giving a path
+        to a file defining the crystal parameters, or passing them to the function as keyword arguments.
+        Keyword parameters are omitted if filepath given.
 
         Input:
-            crystal_str = string representation of the crystal in compliance with xraylib
-            hkl         = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
-            thickness   = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
-        Optional Inputs:
-            asymmetry   = clockwise-positive asymmetry angle wrapped in a Quantity instance.
-                          0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+            filepath   = path to the file with crystal parameters
+
+            OR
+
+            crystal    = string representation of the crystal in compliance with xraylib
+            hkl        = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
+            thickness  = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
+
+            (Optional)
+            asymmetry  = clockwise-positive asymmetry angle wrapped in a Quantity instance.
+                         0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
         '''
+
+        params = {}
+
+        if not filepath == None:
+            #check if file path is given
+            pass
+        else:
+            #Check the presence of the required crystal inputs
+            try:
+                params['crystal'] = kwargs['crystal']
+                params['hkl'] = kwargs['hkl']
+                params['thickness'] = kwargs['thickness']
+            except:
+                raise KeyError('At least one of the required keywords crystal, hkl, and thickness is missing!')
+
+            #Optional keywords
+            if 'asymmetry' in kwargs.keys():
+                params['asymmetry'] = kwargs['asymmetry']
+            else:
+                params['asymmetry'] = Quantity(0,'deg')
 
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
 
-        self.set_crystal(crystal_str)
-        self.set_reflection(hkl)
-        self.set_thickness(thickness)
-
-        if 'asymmetry' in kwargs.keys():
-            self.set_asymmetry(kwargs['asymmetry'])
-        else:
-            self.asymmetry = Quantity(0,'deg')            
+        self.set_crystal(params['crystal'])
+        self.set_reflection(params['hkl'])
+        self.set_thickness(params['thickness'])
+        self.set_asymmetry(params['asymmetry'])
 
         self.update_rotations_and_deformation()
         self._initialized = True
