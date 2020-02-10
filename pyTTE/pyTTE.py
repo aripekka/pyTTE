@@ -35,7 +35,7 @@ class TTcrystal:
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
 
-        self.change_crystal(crystal_str)
+        self.set_crystal(crystal_str)
         self.set_reflection(hkl)
         self.set_thickness(thickness)
 
@@ -47,7 +47,7 @@ class TTcrystal:
         self.update_rotations_and_deformation()
         self._initialized = True
 
-    def change_crystal(self, crystal_str):
+    def set_crystal(self, crystal_str):
         '''
         Changes the crystal keeping other parameters the same. Recalculates
         the crystallographic parameters. The effect on the deformation depends 
