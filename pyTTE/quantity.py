@@ -45,10 +45,20 @@ class Quantity:
     #base unit (often in SI)
 
     def __init__(self,value,unit):
-        if type(value) in [type(1),type(1.0),type(1j)]:
+        '''
+        Intitialize a Quantity instance.
+
+        Input:
+            value = numeric data (literal, list, numpy array)
+            unit  = string of the unit e.g. mm, deg, eV
+        '''
+
+        value = np.array(value)
+        try:
+            value + 1.0; value * 1.0    #Check if the input is of numeric type 
             self.value = value
-        else:
-            raise ValueError('Value of the quantity has to be one of following types: int, float, complex') 
+        except:
+            raise ValueError('Value(s) of the quantity has to be numerical!') 
 
         if type(unit) == type(''):
             if not unit in UNITS.keys():
