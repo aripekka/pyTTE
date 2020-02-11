@@ -51,7 +51,7 @@ class TTcrystal:
                 params['hkl'] = kwargs['hkl']
                 params['thickness'] = kwargs['thickness']
             except:
-                raise KeyError('At least one of the required keywords crystal, hkl, and thickness is missing!')
+                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')
 
             #Optional keywords
             if 'asymmetry' in kwargs.keys():
@@ -171,28 +171,78 @@ class TTcrystal:
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
                'Thickness: ' + str(self.thickness)
-
-'''
 class TTscan:
     
-    #Class containing all the parameters for the energy or angle scan to be simulated.
-    
+    #Class containing all the parameters for the energy or angle scan to be simulated.   
 
-    def __init__(self,**kwargs):
+    def __init__(self, filepath = None, **kwargs):
+        '''
+        Initializes a TTscan instance. The instance can be initialized either by giving a path
+        to a file defining the scan parameters, or passing them to the function as keyword arguments.
+        Keyword parameters are omitted if filepath given.
 
+        Input:
+            filepath = path to the file with crystal parameters
 
+            OR
+
+            constant     = Instance of Quantity of type energy or angle. Determines value of the incident photon 
+                           energy or the Bragg angle fixed during the scan
+            scan         = Either a list of scan points wrapped in a Quantity e.g. Quantity(np.linspace(-100,100,250),'meV')
+                           OR a non-negative integer number of scan points for automatic scan range determination. The unit 
+                           of Quantity has to be angle if the unit of constant is energy and vice versa.
+            polarization = 'sigma' or 's' for sigma-polarized beam OR 'pi' or 'p' for pi-polarized beam
+
+        '''
         #Validate inputs
-       
 
-        try:
-            if type(kwargs['polarization']) == type('') and kwargs['polarization'].lower() in ['sigma','s']:
-                self.polarization = 'sigma'
-            elif type(kwargs['polarization']) == type('') and kwargs['polarization'].lower() in ['pi','p']:
-                self.polarization = 'pi'
+        params = {}
+
+        if not filepath == None:
+            #check if file path is given
+            pass
+        else:
+            #Check the presence of the required crystal inputs
+            try:
+                params['constant']     = kwargs['constant']
+                params['scan']         = kwargs['scan']
+                params['polarization'] = kwargs['polarization']
+            except:
+                raise KeyError('At least one of the required keywords constant, sca, or polarization is missing!')                
+
+        self.set_polarization(params['polarization'])
+        self.set_scan(params['scan'], params['constant'])
+
+    def set_polarization(self,polarization):
+        if type(polarization) == type('') and polarization.lower() in ['sigma','s']:
+            self.polarization = 'sigma'
+        elif type(polarization) == type('') and polarization.lower() in ['pi','p']:
+            self.polarization = 'pi'
+        else:
+            raise ValueError("Invalid polarization! Choose either 'sigma' or 'pi'.")       
+
+    def set_scan(self, scan, constant):        
+        if isinstance(constant, Quantity) and constant.type() in ['angle', 'energy']:
+            if constant.type() == 'angle':
+                self.scantype = 'energy'
             else:
-                raise ValueError("Invalid polarization! Choose either 'sigma' or 'pi'.")
-        except :
-'''
+                self.scantype = 'angle'
+            self.constant = Quantity(constant.value,constant.unit)
+        else:
+            raise ValueError('constant has to be an instance of Quantity of type energy or angle!')
+
+        if isinstance(scan, Quantity) and scan.type() == self.scantype:
+            self.scan = ('manual', Quantity(scan.value,scan.unit))
+        elif type(scan) == type(1) and scan > 0:
+            self.scan = ('automatic',scan)
+        else:
+            raise ValueError('scan has to be either a Quantity of type energy (for angle constant) or angle (for energy constant) or a non-negative integer!')
+
+    def __str__(self):
+        return 'Scan type: ' + self.scantype + '\n' +\
+               'Scan constant: ' + str(self.constant) +'\n' +\
+               'Polarization: ' + self.polarization  +'\n' +\
+               'Scan points: ' + str(self.scan[0])  +'\n'
 
 def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,thickness,displacement_jacobian = None,debyeWaller=1.0,min_int_step=1e-10):
     '''
