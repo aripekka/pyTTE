@@ -132,7 +132,7 @@ class TTcrystal:
 
         #Check that the crystal thickness is valid
         if isinstance(thickness,Quantity) and thickness.type() == 'length':
-            self.thickness = Quantity(thickness.value,thickness.unit)
+            self.thickness = thickness.copy()
         else:
             raise ValueError('Thickness has to be a Quantity instance of type length!')
 
@@ -150,7 +150,7 @@ class TTcrystal:
         '''
 
         if isinstance(asymmetry,Quantity) and asymmetry.type() == 'angle':
-            self.asymmetry = Quantity(asymmetry.value,asymmetry.unit)
+            self.asymmetry = asymmetry.copy()
         else:
             raise ValueError('Asymmetry angle has to be a Quantity instance of type angle!')
 
@@ -162,6 +162,7 @@ class TTcrystal:
         print('HELP! I am update_rotations_and_deformation() and I am not implemented yet!')
 
     def __str__(self):
+        #TODO: Improve output presentation
         return 'Crystal: ' + self.crystal_data['name'] + '\n' +\
                'Crystallographic parameters:\n' +\
                '    a = ' + str(self.crystal_data['a']*0.1)[:8] + ' nm,  b = ' + str(self.crystal_data['b']*0.1)[:8] + ' nm,  c = ' + str(self.crystal_data['c']*0.1)[:8] + ' nm\n'+\
@@ -227,22 +228,118 @@ class TTscan:
                 self.scantype = 'energy'
             else:
                 self.scantype = 'angle'
-            self.constant = Quantity(constant.value,constant.unit)
+            self.constant = constant.copy()
         else:
             raise ValueError('constant has to be an instance of Quantity of type energy or angle!')
 
         if isinstance(scan, Quantity) and scan.type() == self.scantype:
-            self.scan = ('manual', Quantity(scan.value,scan.unit))
+            self.scan = ('manual', scan.copy())
         elif type(scan) == type(1) and scan > 0:
             self.scan = ('automatic',scan)
         else:
             raise ValueError('scan has to be either a Quantity of type energy (for angle constant) or angle (for energy constant) or a non-negative integer!')
 
     def __str__(self):
+        #TODO: Improve output presentation
         return 'Scan type: ' + self.scantype + '\n' +\
                'Scan constant: ' + str(self.constant) +'\n' +\
                'Polarization: ' + self.polarization  +'\n' +\
                'Scan points: ' + str(self.scan[0])  +'\n'
+
+class TakagiTaupin:
+
+    def __init__(self, TTcrystal_object = None, TTscan_object = None):
+        self.crystal_object = None
+        self.scan_object = None
+        self.solution = None
+
+        self.set_crystal(TTcrystal_object)
+        self.set_scan(TTscan_object)
+
+    def set_crystal(self, TTcrystal_object):
+        if not isinstance(TTcrystal_object, TTcrystal) or TTcrystal_object == None: 
+            print('ERROR! Not an instance of TTcrystal or None! Crystal not set.')
+        else:
+            self.crystal_object = TTcrystal_object
+
+    def set_scan(self, TTscan_object):
+        if not isinstance(TTscan_object, TTscan) or TTscan_object == None:
+            print('ERROR! Not an instance of TTscan or None! Scan not set.')
+        else:
+            self.scan_object = TTscan_object
+
+    def run(self):
+        #Check that the required scan parameters are in place
+        if self.crystal_object == None:
+            print('ERROR! No crystal data found, TTcrystal object needed.')
+            return
+        if self.scan_object == None:
+            print('ERROR! No scan data found, TTscan object needed.')
+            return
+
+
+        ################################################
+        #Calculate the constants needed by TT-equations#
+        ################################################
+
+        hc = Quantity(1.23984193,'eV um') #Planck's constant * speed of light
+
+        crystal = self.crystal_object.crystal_data
+        hkl = self.crystal_object.hkl
+
+        d   = Quantity(xraylib.Crystal_dSpacing(crystal,*hkl),'A')    #spacing of Bragg planes
+        V   = Quantity(crystal['volume'],'A^3')                       #volume of unit cell
+        r_e = Quantity(2.81794033e-15,'m')                            #classical electron radius
+        h   = 2*np.pi/d                                               #reciprocal wave vector length
+
+        if self.scan_object.scan[0] == 'automatic':
+            print('AUTOMATIC LIMITS NOT IMPLEMENTED YET!')
+            print('Function terminated.')
+            return None
+        else:
+            scan = self.scan_object.scan[1]
+
+
+        if self.scan_object.scantype == 'energy':
+            theta0 = self.scan_object.constant
+            theta  = theta0
+
+            energy0 = hc/(2*d*np.sin(theta.in_units('rad')))
+            energy  = energy0 + scan
+
+        else:
+            energy0 = self.scan_object.constant
+            energy = energy0
+
+            if not hc/(2*d*energy) > 1:
+                theta0 = Quantity(np.arcsin((hc/(2*d*energy)).in_units('1')), 'rad')
+            else:
+                print('Given energy below the backscattering energy!')
+                print('Setting theta to 90 deg.')
+                theta0 = Quantity(90, 'deg')
+
+            theta = theta0 + scan
+
+        wavelength = hc/energy
+        k = 2*np.pi/wavelength
+
+        #DEBUG:
+        print('hc',hc)
+        print('d',d)
+        print('V',V)
+        print('r_e',r_e)
+        print('h',h)
+
+        print('theta',theta)
+        print('energy',energy)
+
+        print('wavelength',wavelength)
+        print('k',k)
+
+
+    def __str__(self):
+        #TODO: Improve output presentation
+        return str(self.crystal_object) +'\n'+ str(self.scan_object)
 
 def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,thickness,displacement_jacobian = None,debyeWaller=1.0,min_int_step=1e-10):
     '''
