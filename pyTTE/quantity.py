@@ -3,7 +3,9 @@
 from __future__ import division, print_function
 import numpy as np
 
-UNITS = {'m'   : ('length', 1e0),
+UNITS = {'1'   : ('unitless', 1e0),
+        
+         'm'   : ('length', 1e0),
          'cm'  : ('length', 1e-2),
          'mm'  : ('length', 1e-3),
          'µm'  : ('length', 1e-6),
@@ -130,7 +132,7 @@ class Quantity:
         Converts the quantity to given unit. If the conversion is not valid, will raise a ValueError.
 
         Input:
-            unit = str of the unit to be converted to.
+            unit = str of the unit to be converted to. '1' for unitless quantities.
         Output:
             value = converted value in the units required
         '''
@@ -159,21 +161,27 @@ class Quantity:
             else:
                 unit_self_type[utype] = unit_self_type[utype] + self.unit[k]
 
-        #compare units
+        #compare unit dimensions
         for k1 in unit_p_type:
-            match_found = False
-            for k2 in unit_self_type:
-                if k1 == k2 and unit_p_type[k1] == unit_self_type[k2]:
-                    match_found = True                       
-            if not match_found:
-                raise ValueError('Can not convert '+ Quantity._unit2str(unit_self_type) + ' to '+ Quantity._unit2str(unit_p_type) +'.')
+            if k1 == 'unitless' or unit_p_type[k1] == 0:
+                continue
+            else:
+                match_found = False
+                for k2 in unit_self_type:
+                    if k1 == k2 and unit_p_type[k1] == unit_self_type[k2]:
+                        match_found = True                       
+                if not match_found:
+                    raise ValueError('Can not convert '+ Quantity._unit2str(unit_self_type) + ' to '+ Quantity._unit2str(unit_p_type) +'.')
         for k1 in unit_self_type:
-            match_found = False
-            for k2 in unit_p_type:
-                if k1 == k2 and unit_self_type[k1] == unit_p_type[k2]:
-                    match_found = True                       
-            if not match_found:
-                raise ValueError('Can not convert '+ Quantity._unit2str(unit_self_type) + ' to '+ Quantity._unit2str(unit_p_type) +'.')
+            if k1 == 'unitless' or unit_self_type[k1] == 0:
+                continue
+            else:
+                match_found = False
+                for k2 in unit_p_type:
+                    if k1 == k2 and unit_self_type[k1] == unit_p_type[k2]:
+                        match_found = True                       
+                if not match_found:
+                    raise ValueError('Can not convert '+ Quantity._unit2str(unit_self_type) + ' to '+ Quantity._unit2str(unit_p_type) +'.')
 
         #calculate the conversion factor
         convf = 1
@@ -189,9 +197,13 @@ class Quantity:
         '''
         Returns the str of the type of the quantity. 
         '''
-        return 'temp' #UNITS[self.unit][0]
+        return Quantity._type2str(self.unit)
 
-
+    def copy(self):
+        '''
+        Returns the copy of the instance
+        '''
+        return Quantity(self.value, Quantity._unit2str(self.unit))
 
     def _parse_units(unit_string):
         '''
@@ -226,6 +238,13 @@ class Quantity:
         for k in list(units.keys()):
             if units[k] == 0:
                 del units[k]
+
+        #reduce the number of unitless units
+        if '1' in units.keys():
+            if len(units) == 1:
+                units['1'] = 1
+            else:
+                del units['1']
 
         return units
     
@@ -268,6 +287,8 @@ class Quantity:
         unit_str = ''
 
         for k in self.unit:
+            if k == '1':
+                continue
             unit_str = unit_str + k
             if self.unit[k] == 1:
                 unit_str = unit_str + ' '
