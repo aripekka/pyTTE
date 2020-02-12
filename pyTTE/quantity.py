@@ -29,9 +29,20 @@ UNITS = {'m'   : ('length', 1e0),
          'nrad'    : ('angle', 1e-9),
          'deg'     : ('angle', np.pi/180),
          'arcmin'  : ('angle', np.pi/10800),
-         'arc min' : ('angle', np.pi/10800),
          'arcsec'  : ('angle', np.pi/648000),
-         'arc sec' : ('angle', np.pi/648000)
+
+         's'       : ('time', 1e0),
+         'sec'     : ('time', 1e0),
+         'ms'      : ('time', 1e-3),
+         'msec'    : ('time', 1e-3),
+         'us'      : ('time', 1e-6),
+         'usec'    : ('time', 1e-6),
+         'µs'      : ('time', 1e-6),
+         'µsec'    : ('time', 1e-6),
+         'ns'      : ('time', 1e-9),
+         'nsec'    : ('time', 1e-9),
+         'min'     : ('time', 60e0),
+         'h'       : ('time', 3600e0),
 }
 
 
