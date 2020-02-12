@@ -67,6 +67,52 @@ class Quantity:
         else:
             raise ValueError('Unit of the quantity has to be of str type.') 
 
+    def __add__(self,other):        
+        return Quantity(self.value + other.in_units(Quantity._unit2str(self.unit)), Quantity._unit2str(self.unit))
+
+    def __sub__(self,other):        
+        return Quantity(self.value - other.in_units(Quantity._unit2str(self.unit)), Quantity._unit2str(self.unit))
+
+    def __mul__(self,other):        
+        if isinstance(other, Quantity):
+            return Quantity(self.value * other.value, Quantity._unit2str(self.unit) + ' ' + Quantity._unit2str(other.unit))
+        else:
+            #scalar multiplication
+            return Quantity(self.value * other, Quantity._unit2str(self.unit))
+
+    def __rmul__(self,other):        
+        return self * other
+
+    def __truediv__(self,other):
+        if isinstance(other, Quantity):
+            #invert the unit of denominator
+            denom_invunit = {}
+            for k in other.unit:
+                denom_invunit[k] = -other.unit[k]
+            
+            return Quantity(self.value / other.value, Quantity._unit2str(self.unit) + ' ' + Quantity._unit2str(denom_invunit))
+        else:
+            #scalar division
+            return Quantity(self.value / other, Quantity._unit2str(self.unit))
+
+    def __rtruediv__(self,other):
+        #invert the unit of denominator
+        denom_invunit = {}
+        for k in self.unit:
+            denom_invunit[k] = -self.unit[k]           
+
+        if isinstance(other, Quantity):
+            return Quantity(other.value / self.value, Quantity._unit2str(other.unit) + ' ' + Quantity._unit2str(denom_invunit))
+        else:
+            #scalar division by quantity
+            return Quantity(other / self.value, Quantity._unit2str(denom_invunit))
+
+    def __pow__(self,other):
+        if other < 0:
+            return 1/Quantity(self.value ** -other, (Quantity._unit2str(self.unit)+' ')*(-other))
+        else:
+            return Quantity(self.value ** other, (Quantity._unit2str(self.unit)+' ')*other)
+
 
     def in_units(self,unit):
         '''
@@ -166,7 +212,7 @@ class Quantity:
                 raise ValueError('Invalid unit: '+ str(u) + '.')
 
         #remove exponents zero from the unit list
-        for k in units:
+        for k in list(units.keys()):
             if units[k] == 0:
                 del units[k]
 
