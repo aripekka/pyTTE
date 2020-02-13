@@ -26,17 +26,18 @@ class TTcrystal:
         Keyword parameters are omitted if filepath given.
 
         Input:
-            filepath   = path to the file with crystal parameters
+            filepath     = path to the file with crystal parameters
 
             OR
 
-            crystal    = string representation of the crystal in compliance with xraylib
-            hkl        = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
-            thickness  = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
+            crystal      = string representation of the crystal in compliance with xraylib
+            hkl          = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
+            thickness    = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
 
             (Optional)
-            asymmetry  = clockwise-positive asymmetry angle wrapped in a Quantity instance.
-                         0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+            asymmetry    = clockwise-positive asymmetry angle wrapped in a Quantity instance.
+                           0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+            debye_waller = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
         '''
 
         params = {}
@@ -59,6 +60,12 @@ class TTcrystal:
             else:
                 params['asymmetry'] = Quantity(0,'deg')
 
+            if 'debye_waller' in kwargs.keys():
+                params['debye_waller'] = kwargs['debye_waller']
+            else:
+                params['debye_waller'] = 1.0
+
+
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
 
@@ -66,6 +73,7 @@ class TTcrystal:
         self.set_reflection(params['hkl'])
         self.set_thickness(params['thickness'])
         self.set_asymmetry(params['asymmetry'])
+        self.set_debye_waller(params['debye_waller'])
 
         self.update_rotations_and_deformation()
         self._initialized = True
@@ -142,7 +150,7 @@ class TTcrystal:
 
     def set_asymmetry(self, asymmetry):
         '''
-        Set crystal thickness and recalculate the deformation field.
+        Set the asymmetry angle.
 
         Input:
             asymmetry = clockwise-positive asymmetry angle wrapped in a Quantity instance 0 
@@ -153,6 +161,23 @@ class TTcrystal:
             self.asymmetry = asymmetry.copy()
         else:
             raise ValueError('Asymmetry angle has to be a Quantity instance of type angle!')
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def set_debye_waller(self, debye_waller):
+        '''
+        Set the Debye-Waller factor.
+
+        Input:
+            debye_waller = A float or integer in the range [0,1]
+        '''
+
+        if debye_waller >= 0 and debye_waller <= 1:
+            self.debye_waller = debye_waller
+        else:
+            raise ValueError('Debye-Waller factor has to be a float or integer in range [0,1]!')
 
         #skip this if the function is used as a part of initialization
         if self._initialized:
@@ -331,11 +356,109 @@ class TakagiTaupin:
         print('h',h)
 
         print('theta',theta)
-        print('energy',energy)
+        print('energy',energy.in_units('keV'))
 
         print('wavelength',wavelength)
         print('k',k)
 
+        #asymmetry angle
+        phi = self.crystal_object.asymmetry
+
+        #Incidence and exit angles
+        alpha0 = theta+phi
+        alphah = theta-phi
+        
+        #Direction parameters
+        gamma0 = np.ones(scan.value.shape)/np.sin(alpha0.in_units('rad'))
+        gammah = np.ones(scan.value.shape)/np.sin(alphah.in_units('rad'))
+
+        if np.mean(gammah) < 0:
+            print('The direction of diffraction in to the crystal -> Laue case')
+            geometry = 'laue'
+        else:
+            print('The direction of diffraction out of the crystal -> Bragg case')
+            geometry = 'bragg'
+
+        #Polarization factor
+        if self.scan_object.polarization == 'sigma':
+            C = 1;
+            print('Solving for sigma-polarization')
+        else:
+            C = np.cos(2*theta.in_units('rad'));
+            print('Solving for pi-polarization')
+
+
+        #DEBUG
+        print('Asymmetry angle : ', phi)
+        print('Wavelength      : ', hc/energy0)
+        print('Energy          : ', energy0.in_units('keV'), ' keV ')       
+        print('Bragg angle     : ', theta0)
+        print('Incidence angle : ', theta0+phi)
+        print('Exit angle      : ', theta0-phi)
+        print('')
+
+
+        #Compute susceptibilities
+        debye_waller = self.crystal_object.debye_waller
+
+        if self.scan_object.scantype == 'energy':
+            F0 = np.zeros(scan.value.shape,dtype=np.complex)
+            Fh = np.zeros(scan.value.shape,dtype=np.complex)
+            Fb = np.zeros(scan.value.shape,dtype=np.complex)
+
+            for ii in range(scan.value.size):    
+                F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], 0, 0, 0, debye_waller, 1.0)
+                Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
+                Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+        else:
+            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
+            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
+            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+
+        cte = -(r_e * wavelength*wavelength/(np.pi * V)).in_units('1')
+        chi0 = np.conj(cte*F0)
+        chih = np.conj(cte*Fh)
+        chib = np.conj(cte*Fb)
+        
+        #DEBUG
+        print('F0   : ',np.mean(F0))
+        print('Fh   : ',np.mean(Fh))
+        print('Fb   : ',np.mean(Fb))
+        print('')
+        print('chi0 : ',np.mean(chi0))
+        print('chih : ',np.mean(chih))
+        print('chib : ',np.mean(chib))
+        print('')
+        print('(Mean F and chi values for energy scan)')
+        print('')
+
+
+        ######################
+        #COEFFICIENTS FOR TTE#
+        ######################
+
+        #For solving ksi = Dh/D0 
+        c0 = 0.5*k*chi0*(gamma0+gammah)*np.ones(scan.value.shape)
+        ch = 0.5*k*C*chih*gammah*np.ones(scan.value.shape)
+        cb = 0.5*k*C*chib*gamma0*np.ones(scan.value.shape)
+
+        #For solving Y = D0 
+        g0 = 0.5*k*chi0*gamma0*np.ones(scan.value.shape)
+        gb = 0.5*k*C*chib*gamma0*np.ones(scan.value.shape)
+
+        #deviation from the kinematical Bragg condition for unstrained crystal
+        beta = h*gammah*(np.sin(theta.in_units('rad'))-(wavelength/(2*d)).in_units('1'))
+
+        print(c0)
+        print(beta)
+
+
+        '''
+        #For deformation, the strain term function defined later stepwise 
+        if displacement_jacobian == None:
+            def strain_term(z): 
+                return 0
+        '''
 
     def __str__(self):
         #TODO: Improve output presentation
