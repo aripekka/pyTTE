@@ -14,6 +14,8 @@ from .crystal_vectors import crystal_vectors
 
 import xraylib
 
+import multiprocess
+
 class TTcrystal:
     '''
     Contains all the information about the crystal and its depth-dependent deformation.
@@ -302,7 +304,6 @@ class TakagiTaupin:
             print('ERROR! No scan data found, TTscan object needed.')
             return
 
-
         ################################################
         #Calculate the constants needed by TT-equations#
         ################################################
@@ -323,6 +324,8 @@ class TakagiTaupin:
             return None
         else:
             scan = self.scan_object.scan[1]
+            scan_steps = scan.value.size
+            scan_shape = scan.value.shape
 
 
         if self.scan_object.scantype == 'energy':
@@ -369,8 +372,8 @@ class TakagiTaupin:
         alphah = theta-phi
         
         #Direction parameters
-        gamma0 = np.ones(scan.value.shape)/np.sin(alpha0.in_units('rad'))
-        gammah = np.ones(scan.value.shape)/np.sin(alphah.in_units('rad'))
+        gamma0 = np.ones(scan_shape)/np.sin(alpha0.in_units('rad'))
+        gammah = np.ones(scan_shape)/np.sin(alphah.in_units('rad'))
 
         if np.mean(gammah) < 0:
             print('The direction of diffraction in to the crystal -> Laue case')
@@ -387,7 +390,6 @@ class TakagiTaupin:
             C = np.cos(2*theta.in_units('rad'));
             print('Solving for pi-polarization')
 
-
         #DEBUG
         print('Asymmetry angle : ', phi)
         print('Wavelength      : ', hc/energy0)
@@ -397,16 +399,15 @@ class TakagiTaupin:
         print('Exit angle      : ', theta0-phi)
         print('')
 
-
         #Compute susceptibilities
         debye_waller = self.crystal_object.debye_waller
 
         if self.scan_object.scantype == 'energy':
-            F0 = np.zeros(scan.value.shape,dtype=np.complex)
-            Fh = np.zeros(scan.value.shape,dtype=np.complex)
-            Fb = np.zeros(scan.value.shape,dtype=np.complex)
+            F0 = np.zeros(scan_shape,dtype=np.complex)
+            Fh = np.zeros(scan_shape,dtype=np.complex)
+            Fb = np.zeros(scan_shape,dtype=np.complex)
 
-            for ii in range(scan.value.size):    
+            for ii in range(scan_steps):    
                 F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], 0, 0, 0, debye_waller, 1.0)
                 Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
                 Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
@@ -438,13 +439,13 @@ class TakagiTaupin:
         ######################
 
         #For solving ksi = Dh/D0 
-        c0 = 0.5*k*chi0*(gamma0+gammah)*np.ones(scan.value.shape)
-        ch = 0.5*k*C*chih*gammah*np.ones(scan.value.shape)
-        cb = 0.5*k*C*chib*gamma0*np.ones(scan.value.shape)
+        c0 = 0.5*k*chi0*(gamma0+gammah)*np.ones(scan_shape)
+        ch = 0.5*k*C*chih*gammah*np.ones(scan_shape)
+        cb = 0.5*k*C*chib*gamma0*np.ones(scan_shape)
 
         #For solving Y = D0 
-        g0 = 0.5*k*chi0*gamma0*np.ones(scan.value.shape)
-        gb = 0.5*k*C*chib*gamma0*np.ones(scan.value.shape)
+        g0 = 0.5*k*chi0*gamma0*np.ones(scan_shape)
+        gb = 0.5*k*C*chib*gamma0*np.ones(scan_shape)
 
         #deviation from the kinematical Bragg condition for unstrained crystal
         beta = h*gammah*(np.sin(theta.in_units('rad'))-(wavelength/(2*d)).in_units('1'))
@@ -452,13 +453,146 @@ class TakagiTaupin:
         print(c0)
         print(beta)
 
+        displacement_jacobian = None
 
-        '''
-        #For deformation, the strain term function defined later stepwise 
-        if displacement_jacobian == None:
-            def strain_term(z): 
-                return 0
-        '''
+        #############
+        #INTEGRATION#
+        #############
+
+        #Define ODEs and their Jacobians
+        if geometry == 'bragg':
+            print('Transmission in the Bragg case not implemented!')
+            reflectivity = np.zeros(scan_shape)
+            transmission = -np.ones(scan_shape)
+        else:
+            forward_diffraction = np.zeros(scan_shape)
+            diffraction = np.zeros(scan_shape)
+
+        #Fix the length scale to microns for solving
+        c0 = c0.in_units('um^-1'); ch = ch.in_units('um^-1'); cb = cb.in_units('um^-1')
+        g0 = g0.in_units('um^-1'); gb = gb.in_units('um^-1')
+        beta = beta.in_units('um^-1')
+        thickness = self.crystal_object.thickness.in_units('um')
+
+        def integrate_single_scan_step(step):
+            #local variables for speedup
+            c0_step   = c0[step]
+            cb_step   = cb[step]
+            ch_step   = ch[step]
+            beta_step = beta[step]
+            g0_step   = g0[step]
+            gb_step   = gb[step]
+            gammah_step = gammah[step]
+
+            #Define deformation term for bent crystal
+            if not displacement_jacobian == None:
+                #Precomputed sines and cosines
+                sin_phi = np.sin(phi)
+                cos_phi = np.cos(phi)
+
+                if is_escan:
+                    cot_alpha0 = np.cos(alpha0)/np.sin(alpha0)
+                    sin_alphah = np.sin(alphah)
+                    cos_alphah = np.cos(alphah)
+
+                    def strain_term(z):
+                        x = -z*cot_alpha0
+                        u_jac = displacement_jacobian(x,z)
+                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
+                                    +sin_phi*sin_alphah*u_jac[0,1]
+                                    +cos_phi*cos_alphah*u_jac[1,0]
+                                    +cos_phi*sin_alphah*u_jac[1,1]
+                                    )
+                        return gammah_step*duh_dsh
+                else:
+                    cot_alpha0 = np.cos(alpha0[step])/np.sin(alpha0[step])
+                    sin_alphah = np.sin(alphah[step])
+                    cos_alphah = np.cos(alphah[step])
+
+                    def strain_term(z):
+                        x = -z*cot_alpha0
+                        u_jac = displacement_jacobian(x,z)
+                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
+                                    +sin_phi*sin_alphah*u_jac[0,1]
+                                    +cos_phi*cos_alphah*u_jac[1,0] 
+                                    +cos_phi*sin_alphah*u_jac[1,1]
+                                    )
+                        return gammah_step*duh_dsh
+            else:
+                #Non-bent crystal 
+                def strain_term(z): 
+                    return 0
+            
+            if geometry == 'bragg':
+                def ksiprime(z,ksi):
+                    return 1j*(cb_step*ksi*ksi+(c0_step+beta_step+strain_term(z))*ksi+ch_step)
+
+                def ksiprime_jac(z,ksi):
+                    return 2j*cb_step*ksi+1j*(c0_step+beta_step+strain_term(z))
+
+                r=ode(ksiprime,ksiprime_jac)
+            else:
+                def TTE(z,Y):
+                    return [1j*(cb_step*Y[0]*Y[0]+(c0_step+beta_step+strain_term(z))*Y[0]+ch_step),\
+                            -1j*(g0_step+gb_step*Y[0])*Y[1]]
+
+                def TTE_jac(z,Y):
+                    return [[2j*cb_step*Y[0]+1j*(c0_step+beta_step+strain_term(z)), 0],\
+                            [-1j*gb_step*Y[1],-1j*(g0_step+gb_step*Y[0])]]
+
+                r=ode(TTE,TTE_jac)
+
+            r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=1e-11,max_step=thickness,nsteps=50000)
+        
+            lock.acquire()
+            steps_calculated.value = steps_calculated.value + 1
+            sys.stdout.write('\rSolving...%0.1f%%' % (100*(steps_calculated.value)/scan_steps,))  
+            sys.stdout.flush()
+            lock.release()            
+
+
+            if geometry == 'bragg':
+                r.set_initial_value(0,-thickness)
+                res=r.integrate(0)     
+                reflectivity = np.abs(res[0])**2*gamma0[step]/gammah[step] #gamma-part takes into account beam footprints
+                transmission = -1 #Not implemented yet
+                return reflectivity, transmission
+            else:
+                r.set_initial_value([0,1],0)
+                res=r.integrate(-thickness)
+                diffraction = np.abs(res[0]*res[1])**2
+                forward_diffraction = np.abs(res[1])**2
+                return diffraction, forward_diffraction
+
+        n_cores = multiprocess.cpu_count()
+        print('Using ' + str(n_cores) + ' cores.')
+
+        #Solve the equation
+        sys.stdout.write('Solving...0%')
+        sys.stdout.flush()
+       
+        def mp_init(l,v):
+            global lock
+            global steps_calculated
+            lock = l
+            steps_calculated = v
+
+        pool = multiprocess.Pool(n_cores,initializer=mp_init, initargs=(multiprocess.Lock(), multiprocess.Value('i', 0)))
+        output = np.array(pool.map(integrate_single_scan_step,range(scan_steps)))
+        pool.close()
+        pool.join()
+
+        sys.stdout.write('\r\nDone.\n')
+        sys.stdout.flush()
+
+        if geometry == 'bragg':    
+            reflectivity = output[:,0]
+            transmission = output[:,1]
+            return reflectivity, transmission
+        else:    
+            diffraction = output[:,0]
+            forward_diffraction = output[:,1]      
+            return diffraction, forward_diffraction
 
     def __str__(self):
         #TODO: Improve output presentation
