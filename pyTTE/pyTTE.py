@@ -80,9 +80,7 @@ class TTcrystal:
             try:
                 params['crystal']; params['hkl']; params['thickness']
             except:
-                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')
-            
-            print(params)
+                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')           
         else:
             #Check the presence of the required crystal inputs
             try:
@@ -258,8 +256,36 @@ class TTscan:
         params = {}
 
         if not filepath == None:
-            #check if file path is given
-            pass
+            #read file contents
+            try:
+                f = open(filepath,'r')    
+                lines = f.readlines()
+            except Exception as e:
+                raise e
+            finally:
+                f.close()
+
+            #check and parse parameters
+            for line in lines:
+                if not line[0] == '#':  #skip comments
+                    ls = line.split() 
+                    if ls[0] == 'constant' and len(ls) == 3:
+                        params['constant'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'scan' and len(ls) == 2:
+                        params['scan'] = int(ls[1])
+                    elif ls[0] == 'scan' and len(ls) == 5:
+                        params['scan'] = Quantity(np.linspace(float(ls[1]),float(ls[2]),int(ls[3])),ls[4])
+                    elif ls[0] == 'polarization' and len(ls) == 2:
+                        params['polarization'] = ls[1]
+                    else:
+                        print('Skipped an invalid line in the file: ' + line)
+ 
+            #Check the presence of the required crystal inputs
+            try:
+                params['constant']; params['scan']; params['polarization']
+            except:
+                raise KeyError('At least one of the required keywords constant, scan, or polarization is missing!')
+
         else:
             #Check the presence of the required crystal inputs
             try:
@@ -267,7 +293,7 @@ class TTscan:
                 params['scan']         = kwargs['scan']
                 params['polarization'] = kwargs['polarization']
             except:
-                raise KeyError('At least one of the required keywords constant, sca, or polarization is missing!')                
+                raise KeyError('At least one of the required keywords constant, scan, or polarization is missing!')                
 
         self.set_polarization(params['polarization'])
         self.set_scan(params['scan'], params['constant'])
