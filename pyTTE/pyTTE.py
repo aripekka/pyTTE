@@ -341,16 +341,28 @@ class TakagiTaupin:
         self.set_scan(TTscan_object)
 
     def set_crystal(self, TTcrystal_object):
-        if not isinstance(TTcrystal_object, TTcrystal) or TTcrystal_object == None: 
-            print('ERROR! Not an instance of TTcrystal or None! Crystal not set.')
-        else:
+        if isinstance(TTcrystal_object, TTcrystal): 
             self.crystal_object = TTcrystal_object
+        elif type(TTcrystal_object) == str:
+            try:
+                self.crystal_object = TTcrystal(TTcrystal_object)
+            except Exception as e:
+                print(e)
+                print('Error initializing TTcrystal from file! Crystal not set.')
+        else:
+            print('ERROR! Not an instance of TTcrystal or None! Crystal not set.')
 
     def set_scan(self, TTscan_object):
-        if not isinstance(TTscan_object, TTscan) or TTscan_object == None:
-            print('ERROR! Not an instance of TTscan or None! Scan not set.')
-        else:
+        if isinstance(TTscan_object, TTscan):
             self.scan_object = TTscan_object
+        elif type(TTscan_object) == str:
+            try:
+                self.scan_object = TTscan(TTscan_object)
+            except Exception as e:
+                print(e)
+                print('Error initializing TTscan from file! Scan not set.')
+        else:
+            print('ERROR! Not an instance of TTscan or None! Scan not set.')
 
     def run(self):
         #Check that the required scan parameters are in place
