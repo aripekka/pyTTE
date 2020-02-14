@@ -45,9 +45,44 @@ class TTcrystal:
 
         params = {}
 
+        #set the default values for the optional parameters
+        params['asymmetry'] = Quantity(0,'deg')
+        params['debye_waller'] = 1.0
+
         if not filepath == None:
-            #check if file path is given
-            pass
+            #read file contents
+            try:
+                f = open(filepath,'r')    
+                lines = f.readlines()
+            except Exception as e:
+                raise e
+            finally:
+                f.close()
+
+            #check and parse parameters
+            for line in lines:
+                if not line[0] == '#':  #skip comments
+                    ls = line.split() 
+                    if ls[0] == 'crystal' and len(ls) == 2:
+                        params['crystal'] = ls[1]
+                    elif ls[0] == 'hkl' and len(ls) == 4:
+                        params['hkl'] = [int(ls[1]),int(ls[2]),int(ls[3])]
+                    elif ls[0] == 'thickness' and len(ls) == 3:
+                        params['thickness'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'asymmetry' and len(ls) == 3:
+                        params['asymmetry'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'debye_waller' and len(ls) == 2:
+                        params['debye_waller'] = float(ls[1])
+                    else:
+                        print('Skipped an invalid line in the file: ' + line)
+ 
+            #Check the presence of the required crystal inputs
+            try:
+                params['crystal']; params['hkl']; params['thickness']
+            except:
+                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')
+            
+            print(params)
         else:
             #Check the presence of the required crystal inputs
             try:
@@ -60,13 +95,8 @@ class TTcrystal:
             #Optional keywords
             if 'asymmetry' in kwargs.keys():
                 params['asymmetry'] = kwargs['asymmetry']
-            else:
-                params['asymmetry'] = Quantity(0,'deg')
-
             if 'debye_waller' in kwargs.keys():
                 params['debye_waller'] = kwargs['debye_waller']
-            else:
-                params['debye_waller'] = 1.0
 
 
         #used to prevent recalculation of the deformation in parameter set functions during init
