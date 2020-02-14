@@ -5,6 +5,7 @@ import sys
 import os
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from scipy.integrate import ode
 from scipy.constants.codata import physical_constants
@@ -588,15 +589,59 @@ class TakagiTaupin:
         if geometry == 'bragg':    
             reflectivity = output[:,0]
             transmission = output[:,1]
-            return reflectivity, transmission
+
+            self.solution = {'scan' : scan, 
+                             'geometry' : 'bragg', 
+                             'reflectivity' : reflectivity, 
+                             'transmission': transmission
+                            }
+
+            return scan.value, reflectivity, transmission
         else:    
             diffraction = output[:,0]
             forward_diffraction = output[:,1]      
-            return diffraction, forward_diffraction
+
+            self.solution = {'scan' : scan, 
+                             'geometry' : 'laue', 
+                             'diffraction' : diffraction, 
+                             'forward_diffraction': forward_diffraction
+                            }
+
+            return scan.value, diffraction, forward_diffraction
+
+    def plot(self):
+        '''
+        Plots the calculated solution
+        '''
+
+        if self.solution == None:
+            print('No calculated Takagi-Taupin curves found! Call run() first!')
+            return
+
+        if self.solution['geometry'] == 'bragg':
+            plt.plot(self.solution['scan'].value, self.solution['reflectivity'])
+            if Quantity._type2str(self.solution['scan'].unit) == 'energy':
+                plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+            else:
+                plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+            plt.ylabel('Reflectivity')
+        else:
+            plt.plot(self.solution['scan'].value, self.solution['forward_diffraction'],label = 'Forward-diffraction')
+            plt.plot(self.solution['scan'].value, self.solution['diffraction'],label = 'Diffraction')
+
+            if Quantity._type2str(self.solution['scan'].unit) == 'energy':
+                plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+            else:
+                plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+            plt.ylabel('Intensity w.r.t incident')
+            plt.legend()
+
+        plt.show()
 
     def __str__(self):
         #TODO: Improve output presentation
         return str(self.crystal_object) +'\n'+ str(self.scan_object)
+
 
 def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,thickness,displacement_jacobian = None,debyeWaller=1.0,min_int_step=1e-10):
     '''
