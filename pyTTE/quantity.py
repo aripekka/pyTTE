@@ -45,6 +45,11 @@ UNITS = {'1'   : ('unitless', 1e0),
          'nsec'    : ('time', 1e-9),
          'min'     : ('time', 60e0),
          'h'       : ('time', 3600e0),
+
+         'Pa'      : ('pressure', 1e0),
+         'kPa'     : ('pressure', 1e3),
+         'MPa'     : ('pressure', 1e6),
+         'GPa'     : ('pressure', 1e9),
 }
 
 
