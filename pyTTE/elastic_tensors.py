@@ -187,7 +187,7 @@ def elastic_matrices(xtal_str):
         xtal_str = crystal string e.g. 'Si', 'Ge', 'AlphaQuartz'
     Output:
         C_matrix = stiffness matrix in units 10^{11} Pa
-        S_matrix = compliance matrix in units 10^{-11} Pa
+        S_matrix = compliance matrix in units 10^{-11} Pa^-1
     '''
 
     try:
