@@ -1,5 +1,7 @@
 from __future__ import division, print_function
 from numpy import inf
+from .elastic_tensors import rotate_elastic_matrix
+from .rotation_matrix import inplane_rotation
 
 def isotropic_plate(Rx,Ry,nu,thickness):
     '''
@@ -34,8 +36,6 @@ def anisotropic_plate(Rx,Ry,S,thickness):
     '''
     Creates a function for computing the Jacobian of
     the displacement field for an isotropic plate.
-    HINT: For cylindrical bending with anticlastic
-    curvature, set Ry = S_11/S_12*Rx
     '''
     if Rx == 'inf' or Rx == 'Inf' or Rx == inf:
         invRx = 0
@@ -47,20 +47,38 @@ def anisotropic_plate(Rx,Ry,S,thickness):
     else:
         invRy = 1/Ry
 
-    #Precomputed coefficients
-    mx = (S[0][1]*invRy-S[1][1]*invRx)/(S[0][0]*S[1][1]-S[0][1]*S[1][0])
-    my = (S[1][0]*invRx-S[0][0]*invRy)/(S[0][0]*S[1][1]-S[0][1]*S[1][0])
+    #In the general case, the torques are not necessarely aligned with
+    #x- and y-axes but have to be rotated.
 
-    coef1 = S[0][0]*mx + S[0][1]*my
-    coef2 = S[4][0]*mx + S[4][1]*my
-    coef3 = S[2][0]*mx + S[2][1]*my
+    S = np.array(S)
+
+    meps = np.finfo(type(S[0][0])).eps
+    if S[5,0] < meps and S[5,1] < meps and S[1,1] - S[0,0] < meps and S[0,0] + S[1,1] - 2*S[0,1] - S[5,5] < meps:
+        alpha = 0
+    else:
+        Aa = S[5,5]*(S[0,0] + S[1,1] + 2*S[0,1]) - (S[5,0] + S[5,1])**2
+        Ba = 2*(S[5,1]*(S[0,1] + S[0,0]) - S[5,0]*(S[0,1] + S[1,1])) 
+        Ca = S[5,5]*(S[1,1]-S[0,0]) + S[5,0]**2 - S[5,1]**2
+        Da = 2*(S[5,1]*(S[0,1] - S[0,0]) + S[5,0]*(S[0,1] - S[1,1]))
+
+        alpha = 0.5*np.arctan(Da*(invRy+invRx) - Ba*(invRy-invRx), Aa*(invRy-invRx) - Ca*(invRy+invRx))
+
+    #rotate S by alpha
+    Sp = rotate_elastic_matrix(S, 'S', inplane_rotation(alpha))
+
+    #Precomputed coefficients
+    mx = 0.5*((Sp[0,1]-Sp[1,1])*(invRy + invRx) + (Sp[0,1]+Sp[1,1])*(invRy - invRx)*np.cos(2*alpha))/(Sp[0,0]*Sp[1,1] - Sp[0,1]*Sp[0,1])
+    my = 0.5*((Sp[0,1]-Sp[0,0])*(invRy + invRx) + (Sp[0,1]+Sp[0,0])*(invRy - invRx)*np.cos(2*alpha))/(Sp[0,0]*Sp[1,1] - Sp[0,1]*Sp[0,1])
+
+    coef1 = Sp[2,0]*mx + Sp[2,1]*my
+    coef2 = (Sp[4,0]*mx + Sp[4,1]*my)*np.cos(alpha) - (Sp[3,0]*mx + Sp[3,1]*my)*np.sin(alpha)
 
     def jacobian(x,z):
-        ux_x = coef1*(z+0.5*thickness)
-        ux_z = coef1*x+coef2*(z+0.5*thickness)
+        ux_x = -invRx*(z+0.5*thickness)
+        ux_z = -invRx*x + coef2*(z+0.5*thickness)
 
-        uz_x = -coef1*x
-        uz_z = coef3*(z+0.5*thickness)
+        uz_x = invRx*x
+        uz_z = coef1*(z+0.5*thickness)
 
         return [[ux_x,ux_z],[uz_x,uz_z]]
 
