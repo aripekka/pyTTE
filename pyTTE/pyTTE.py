@@ -12,6 +12,7 @@ from scipy.constants.codata import physical_constants
 
 from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
+from .elastic_tensors import elastic_matrices
 
 import xraylib
 
@@ -41,6 +42,13 @@ class TTcrystal:
             asymmetry    = clockwise-positive asymmetry angle wrapped in a Quantity instance.
                            0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
             debye_waller = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
+
+            S            = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
+                           compliance matrix given by elastic_tensors
+            E            = Young's modulus for isotropic material in a Quantity instance. Overrides the 
+                           default compliance matrix. Neglected if S is given
+            nu           = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
+                           Neglected if S is given.
         '''
 
         params = {}
@@ -48,6 +56,11 @@ class TTcrystal:
         #set the default values for the optional parameters
         params['asymmetry'] = Quantity(0,'deg')
         params['debye_waller'] = 1.0
+
+        params['S']  = None
+        params['E']  = None
+        params['nu'] = None
+
 
         if not filepath == None:
             #read file contents
@@ -95,6 +108,18 @@ class TTcrystal:
                 params['asymmetry'] = kwargs['asymmetry']
             if 'debye_waller' in kwargs.keys():
                 params['debye_waller'] = kwargs['debye_waller']
+            if 'S' in kwargs.keys():
+                params['S'] = kwargs['S']
+                if 'E' in kwargs.keys() or 'nu' in kwargs.keys():
+                    print('E and nu omitted as S is given.')
+            if 'E' in kwargs.keys():
+                if 'nu' in kwargs.keys():
+                    params['E'] = kwargs['E']
+                    params['nu'] = kwargs['nu']
+                else:
+                    raise KeyError('Both E and nu required for isotropic material!')
+            elif 'nu' in kwargs.keys():            
+                raise KeyError('Both E and nu required for isotropic material!')
 
 
         #used to prevent recalculation of the deformation in parameter set functions during init
@@ -105,6 +130,13 @@ class TTcrystal:
         self.set_thickness(params['thickness'])
         self.set_asymmetry(params['asymmetry'])
         self.set_debye_waller(params['debye_waller'])
+
+        if not params['S'] == None:
+            self.set_elastic_constants(S = params['S'])
+        elif (not params['E'] == None) and (not params['nu'] == None):
+            self.set_elastic_constants(E = params['E'], nu = params['nu'])
+        else:
+            self.set_elastic_constants()
 
         self.update_rotations_and_deformation()
         self._initialized = True
@@ -214,11 +246,60 @@ class TTcrystal:
         if self._initialized:
             self.update_rotations_and_deformation()
 
+    def set_elastic_constants(self, **kwargs):
+        '''
+        Set either the compliance matrix (fully anisotropic) or Young's modulus and Poisson ratio (isotropic).
+
+        Input:
+            None for the compliance matrix in the internal database
+
+            OR
+
+            S = 6x6 compliance matrix wrapped in a instance of Quantity of type pressure^-1
+            
+            OR
+            
+            E  = Young's modulus in a Quantity instance of type pressure
+            nu = Poisson's ratio (float or int) 
+        '''
+
+        if 'S' in kwargs.keys():
+            if isinstance(kwargs['S'], Quantity) and kwargs['S'].type() == 'pressure^-1':
+                if kwargs['S'].value.shape == (6,6):
+                    self.isotropy = 'anisotropic'
+                    self.S = kwargs['S'].copy()
+                else:
+                    raise ValueError('Shape of S has to be (6,6)!')
+            else:
+                raise ValueError('S has to be an instance of Quantity of type pressure^-1!')
+        elif 'E' in kwargs.keys() and 'nu' in kwargs.keys():
+            if isinstance(kwargs['E'], Quantity) and kwargs['E'].type() == 'pressure':
+                if type(kwargs['nu']) in [int, float]:
+                    self.isotropy = 'isotropic'
+                    self.E  = kwargs['E'].copy()
+                    self.nu = kwargs['nu']
+                else:
+                    raise ValueError('nu has to be float or int!')
+            else:
+                raise ValueError('E has to be an instance of Quantity of type pressure!')
+        else:
+            self.isotropy = 'anisotropic'
+            self.S = Quantity(0.01*elastic_matrices(self.crystal_data['name'])[1],'GPa^-1')
+            
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
     def update_rotations_and_deformation(self):
         print('HELP! I am update_rotations_and_deformation() and I am not implemented yet!')
 
     def __str__(self):
         #TODO: Improve output presentation
+        if self.isotropy == 'anisotropic':
+            elastic_str = 'S:\n' + str(self.S)
+        else:
+            elastic_str = 'E: ' + str(self.E) + '\nnu: '+ str(self.nu) 
+
         return 'Crystal: ' + self.crystal_data['name'] + '\n' +\
                'Crystallographic parameters:\n' +\
                '    a = ' + str(self.crystal_data['a']*0.1)[:8] + ' nm,  b = ' + str(self.crystal_data['b']*0.1)[:8] + ' nm,  c = ' + str(self.crystal_data['c']*0.1)[:8] + ' nm\n'+\
@@ -227,7 +308,8 @@ class TTcrystal:
                'Reciprocal primitive vectors (columns, in 1/nm):\n'+ np.array2string(10*self.reciprocal_primitives,precision=4,suppress_small=True)+'\n'+\
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
-               'Thickness: ' + str(self.thickness)
+               'Thickness: ' + str(self.thickness)+'\n\n'+\
+               'Elastic material: ' + str(self.isotropy) +'\n' + elastic_str                
 class TTscan:
     
     #Class containing all the parameters for the energy or angle scan to be simulated.   
