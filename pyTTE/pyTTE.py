@@ -181,6 +181,9 @@ class TTcrystal:
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
 
+        #determines the length scale in which the position coordinate to the jacobian are given 
+        self._jacobian_length_unit = 'mm'
+
         self.set_crystal(params['crystal'])
         self.set_reflection(params['hkl'])
         self.set_thickness(params['thickness'])
@@ -393,16 +396,16 @@ class TTcrystal:
         if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
             self.deformation_jacobian = None
         elif self.isotropy == 'anisotropic':
-            self.deformation_jacobian = anisotropic_plate(self.Rx.in_units('mm'),
-                                                          self.Ry.in_units('mm'),
+            self.deformation_jacobian = anisotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
+                                                          self.Ry.in_units(self._jacobian_length_unit),
                                                           self.S.in_units('GPa^-1'),
-                                                          self.thickness.in_units('mm'))
+                                                          self.thickness.in_units(self._jacobian_length_unit))
 
         else:
-            self.deformation_jacobian = isotropic_plate(self.Rx.in_units('mm'),
-                                                        self.Ry.in_units('mm'),
+            self.deformation_jacobian = isotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
+                                                        self.Ry.in_units(self._jacobian_length_unit),
                                                         self.nu,
-                                                        self.thickness.in_units('mm'))
+                                                        self.thickness.in_units(self._jacobian_length_unit))
 
     def __str__(self):
         #TODO: Improve output presentation
