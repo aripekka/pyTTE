@@ -130,7 +130,8 @@ class TTcrystal:
                     elif ls[0] == 'Ry' and len(ls) == 3:
                         params['Ry'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'R' and len(ls) == 3:
-                        params['R'] = Quantity(float(ls[1]),ls[2])
+                        params['Rx'] = Quantity(float(ls[1]),ls[2])
+                        params['Ry'] = Quantity(float(ls[1]),ls[2])
                     else:
                         print('Skipped an invalid line in the file: ' + line)
 
@@ -182,7 +183,7 @@ class TTcrystal:
         self._initialized = False
 
         #determines the length scale in which the position coordinate to the jacobian are given 
-        self._jacobian_length_unit = 'mm'
+        self._jacobian_length_unit = 'um'
 
         self.set_crystal(params['crystal'])
         self.set_reflection(params['hkl'])
@@ -388,24 +389,24 @@ class TTcrystal:
 
         #Apply rotations of the crystal to the elastic matrix
         if self.isotropy == 'anisotropic':
-            #TODO: inplane_rotation
+            #TODO: hkl||z alignment and inplane_rotation
             Rmatrix = rotate_asymmetry(self.asymmetry.in_units('deg'))
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
         
         #calculate the depth-dependent deformation jacobian
         if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
-            self.deformation_jacobian = None
+            self.displacement_jacobian = None
         elif self.isotropy == 'anisotropic':
-            self.deformation_jacobian = anisotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
-                                                          self.Ry.in_units(self._jacobian_length_unit),
-                                                          self.S.in_units('GPa^-1'),
-                                                          self.thickness.in_units(self._jacobian_length_unit))
+            self.displacement_jacobian = anisotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
+                                                           self.Ry.in_units(self._jacobian_length_unit),
+                                                           self.S.in_units('GPa^-1'),
+                                                           self.thickness.in_units(self._jacobian_length_unit))
 
         else:
-            self.deformation_jacobian = isotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
-                                                        self.Ry.in_units(self._jacobian_length_unit),
-                                                        self.nu,
-                                                        self.thickness.in_units(self._jacobian_length_unit))
+            self.displacement_jacobian = isotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
+                                                         self.Ry.in_units(self._jacobian_length_unit),
+                                                         self.nu,
+                                                         self.thickness.in_units(self._jacobian_length_unit))
 
     def __str__(self):
         #TODO: Improve output presentation
@@ -720,7 +721,12 @@ class TakagiTaupin:
         print(c0)
         print(beta)
 
-        displacement_jacobian = None
+        displacement_jacobian = self.crystal_object.displacement_jacobian
+
+        print(displacement_jacobian)
+        print(displacement_jacobian(0,0))
+        print(displacement_jacobian(0,-self.crystal_object.thickness.in_units('um')))
+
 
         #############
         #INTEGRATION#
@@ -738,7 +744,7 @@ class TakagiTaupin:
         #Fix the length scale to microns for solving
         c0 = c0.in_units('um^-1'); ch = ch.in_units('um^-1'); cb = cb.in_units('um^-1')
         g0 = g0.in_units('um^-1'); gb = gb.in_units('um^-1')
-        beta = beta.in_units('um^-1')
+        beta = beta.in_units('um^-1'); h = h.in_units('um^-1')
         thickness = self.crystal_object.thickness.in_units('um')
 
         def integrate_single_scan_step(step):
@@ -754,35 +760,35 @@ class TakagiTaupin:
             #Define deformation term for bent crystal
             if not displacement_jacobian == None:
                 #Precomputed sines and cosines
-                sin_phi = np.sin(phi)
-                cos_phi = np.cos(phi)
+                sin_phi = np.sin(phi.in_units('rad'))
+                cos_phi = np.cos(phi.in_units('rad'))
 
-                if is_escan:
-                    cot_alpha0 = np.cos(alpha0)/np.sin(alpha0)
-                    sin_alphah = np.sin(alphah)
-                    cos_alphah = np.cos(alphah)
+                if self.scan_object.scantype == 'energy':
+                    cot_alpha0 = np.cos(alpha0.in_units('rad'))/np.sin(alpha0.in_units('rad'))
+                    sin_alphah = np.sin(alphah.in_units('rad'))
+                    cos_alphah = np.cos(alphah.in_units('rad'))
 
                     def strain_term(z):
                         x = -z*cot_alpha0
                         u_jac = displacement_jacobian(x,z)
-                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0] 
-                                    +sin_phi*sin_alphah*u_jac[0,1]
-                                    +cos_phi*cos_alphah*u_jac[1,0]
-                                    +cos_phi*sin_alphah*u_jac[1,1]
+                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0] 
+                                    +sin_phi*sin_alphah*u_jac[0][1]
+                                    +cos_phi*cos_alphah*u_jac[1][0]
+                                    +cos_phi*sin_alphah*u_jac[1][1]
                                     )
                         return gammah_step*duh_dsh
                 else:
-                    cot_alpha0 = np.cos(alpha0[step])/np.sin(alpha0[step])
-                    sin_alphah = np.sin(alphah[step])
-                    cos_alphah = np.cos(alphah[step])
+                    cot_alpha0 = np.cos(alpha0.in_units('rad')[step])/np.sin(alpha0.in_units('rad')[step])
+                    sin_alphah = np.sin(alphah.in_units('rad')[step])
+                    cos_alphah = np.cos(alphah.in_units('rad')[step])
 
                     def strain_term(z):
                         x = -z*cot_alpha0
                         u_jac = displacement_jacobian(x,z)
-                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0,0]
-                                    +sin_phi*sin_alphah*u_jac[0,1]
-                                    +cos_phi*cos_alphah*u_jac[1,0] 
-                                    +cos_phi*sin_alphah*u_jac[1,1]
+                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0]
+                                    +sin_phi*sin_alphah*u_jac[0][1]
+                                    +cos_phi*cos_alphah*u_jac[1][0] 
+                                    +cos_phi*sin_alphah*u_jac[1][1]
                                     )
                         return gammah_step*duh_dsh
             else:
