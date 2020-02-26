@@ -53,7 +53,7 @@ def anisotropic_plate(Rx,Ry,S,thickness):
     S = np.array(S)
 
     meps = np.finfo(type(S[0][0])).eps
-    if S[5,0] < meps and S[5,1] < meps and S[1,1] - S[0,0] < meps and S[0,0] + S[1,1] - 2*S[0,1] - S[5,5] < meps:
+    if abs(S[5,0]) < meps and abs(S[5,1]) < meps and abs(S[1,1] - S[0,0]) < meps and abs(S[0,0] + S[1,1] - 2*S[0,1] - S[5,5]) < meps:
         alpha = 0
     else:
         Aa = S[5,5]*(S[0,0] + S[1,1] + 2*S[0,1]) - (S[5,0] + S[5,1])**2
