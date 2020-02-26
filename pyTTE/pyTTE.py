@@ -44,7 +44,7 @@ class TTcrystal:
             debye_waller = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
 
             S            = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
-                           compliance matrix given by elastic_tensors.
+                           compliance matrix given by elastic_tensors and given E and nu, if given.
 
                            If an input file is used, the non-zero elements of the compliance matrix
                            in the upper triangle and on the diagonal should be given in the units GPa^-1 
@@ -62,6 +62,11 @@ class TTcrystal:
                            default compliance matrix. Neglected if S is given
             nu           = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
                            Neglected if S is given.
+
+            Rx, Ry       = Meridional and sagittal bending radii for toroidal bending wrapped in 
+                           Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf (no bending). 
+                           Overridden by R.
+            R            = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry. 
         '''
 
         params = {}
@@ -74,6 +79,8 @@ class TTcrystal:
         params['E']  = None
         params['nu'] = None
 
+        params['Rx'] = None
+        params['Ry'] = None
 
         if not filepath == None:
             #read file contents
@@ -116,6 +123,12 @@ class TTcrystal:
                         else:
                             S_matrix[i,j] = float(ls[1])
                             S_matrix[j,i] = float(ls[1])
+                    elif ls[0] == 'Rx' and len(ls) == 3:
+                        params['Rx'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'Ry' and len(ls) == 3:
+                        params['Ry'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'R' and len(ls) == 3:
+                        params['R'] = Quantity(float(ls[1]),ls[2])
                     else:
                         print('Skipped an invalid line in the file: ' + line)
 
@@ -153,6 +166,15 @@ class TTcrystal:
             elif 'nu' in kwargs.keys():            
                 raise KeyError('Both E and nu required for isotropic material!')
 
+            if 'Rx' in kwargs.keys():
+                params['Rx'] = kwargs['Rx']
+            if 'Ry' in kwargs.keys():
+                params['Ry'] = kwargs['Ry']
+            if 'R' in kwargs.keys():  
+                if 'Rx' in kwargs.keys() or 'Rx' in kwargs.keys():
+                    print('Warning! Rx and/or Ry given but overridden by R.')
+                params['Rx'] = kwargs['R']
+                params['Ry'] = kwargs['R']
 
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
@@ -171,6 +193,8 @@ class TTcrystal:
             self.set_elastic_constants(E = params['E'], nu = params['nu'])
         else:
             self.set_elastic_constants()
+
+        self.set_bending_radii(params['Rx'],params['Ry'])
 
         self.update_rotations_and_deformation()
         self._initialized = True
@@ -324,6 +348,32 @@ class TTcrystal:
         if self._initialized:
             self.update_rotations_and_deformation()
 
+    def set_bending_radii(self, Rx, Ry):
+        '''
+        Sets the meridional and sagittal bending radii.
+
+        Input:
+            Rx, Ry = Meridional and sagittal bending radii wrapped in Quantity instances of type length.
+                     Alternatively can be float('inf'), 'inf' or None
+        '''
+
+        if isinstance(Rx, Quantity) and Rx.type() == 'length':
+            self.Rx = Rx.copy()
+        elif Rx == None or Rx == 'inf' or Rx == float('inf'):
+            self.Rx = Quantity(float('inf'),'m')
+        else:
+            raise ValueError('Rx has to be an instance of Quantity of type length, inf, or None!')
+        if isinstance(Ry, Quantity) and Ry.type() == 'length':
+            self.Ry = Ry.copy()
+        elif Ry == None or Ry == 'inf' or Ry == float('inf'):
+            self.Ry = Quantity(float('inf'),'m')
+        else:
+            raise ValueError('Ry has to be an instance of Quantity of type length, inf, or None!')
+            
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
     def update_rotations_and_deformation(self):
         print('HELP! I am update_rotations_and_deformation() and I am not implemented yet!')
 
@@ -342,8 +392,10 @@ class TTcrystal:
                'Reciprocal primitive vectors (columns, in 1/nm):\n'+ np.array2string(10*self.reciprocal_primitives,precision=4,suppress_small=True)+'\n'+\
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
-               'Thickness: ' + str(self.thickness)+'\n\n'+\
-               'Elastic material: ' + str(self.isotropy) +'\n' + elastic_str                
+               'Thickness: ' + str(self.thickness)+'\n'+\
+               'Meridional bending radius: ' + str(self.Rx) +'\n'+\
+               'Sagittal bending radius: ' + str(self.Ry) +'\n'+\
+               'Elastic material: ' + str(self.isotropy) +'\n' + elastic_str        
 class TTscan:
     
     #Class containing all the parameters for the energy or angle scan to be simulated.   
