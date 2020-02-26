@@ -72,7 +72,7 @@ def inplane_rotation(alpha):
         R = 3x3 rotation matrix
     '''
 
-    R = rotation_matrix_axis_angle([0,0,1], alpha)
+    R = axis_angle([0,0,1], alpha)
 
     return R
 
@@ -88,7 +88,7 @@ def rotate_asymmetry(phi):
         R = 3x3 rotation matrix
     '''
 
-    R = rotation_matrix_axis_angle([0,1,0], phi)
+    R = axis_angle([0,1,0], phi)
 
     return R
 
