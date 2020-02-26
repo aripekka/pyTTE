@@ -44,7 +44,20 @@ class TTcrystal:
             debye_waller = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
 
             S            = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
-                           compliance matrix given by elastic_tensors
+                           compliance matrix given by elastic_tensors.
+
+                           If an input file is used, the non-zero elements of the compliance matrix
+                           in the upper triangle and on the diagonal should be given in the units GPa^-1 
+                           (order doesn't matter). Any lower triangle inputs will be omitted as they are 
+                           obtained symmetrically from the upper triangle. 
+
+                           Example input: 
+                               S11  0.00723
+                               S22  0.00723
+                               S33  0.00723
+                               S12 -0.00214
+                               etc.
+
             E            = Young's modulus for isotropic material in a Quantity instance. Overrides the 
                            default compliance matrix. Neglected if S is given
             nu           = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
@@ -72,6 +85,10 @@ class TTcrystal:
             finally:
                 f.close()
 
+            #Boolean to check if elements of the compliance matrix are given
+            is_S_given = False
+            S_matrix = np.zeros((6,6))
+
             #check and parse parameters
             for line in lines:
                 if not line[0] == '#':  #skip comments
@@ -86,9 +103,26 @@ class TTcrystal:
                         params['asymmetry'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'debye_waller' and len(ls) == 2:
                         params['debye_waller'] = float(ls[1])
+                    elif ls[0] == 'E' and len(ls) == 3:
+                        params['E'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'nu' and len(ls) == 2:
+                        params['nu'] = float(ls[1])
+                    elif ls[0][0] == 'S' and len(ls[0]) == 3 and len(ls) == 2:
+                        is_S_given = True
+                        i = int(ls[0][1])-1
+                        j = int(ls[0][2])-1
+                        if i > j:
+                            print('Omitted the lower triangle element ' + ls[0] + '.')
+                        else:
+                            S_matrix[i,j] = float(ls[1])
+                            S_matrix[j,i] = float(ls[1])
                     else:
                         print('Skipped an invalid line in the file: ' + line)
- 
+
+            #Finalize the S matrix
+            if is_S_given:
+                params['S'] = Quantity(S_matrix,'GPa^-1') 
+
             #Check the presence of the required crystal inputs
             try:
                 params['crystal']; params['hkl']; params['thickness']
@@ -110,8 +144,6 @@ class TTcrystal:
                 params['debye_waller'] = kwargs['debye_waller']
             if 'S' in kwargs.keys():
                 params['S'] = kwargs['S']
-                if 'E' in kwargs.keys() or 'nu' in kwargs.keys():
-                    print('E and nu omitted as S is given.')
             if 'E' in kwargs.keys():
                 if 'nu' in kwargs.keys():
                     params['E'] = kwargs['E']
@@ -133,6 +165,8 @@ class TTcrystal:
 
         if not params['S'] == None:
             self.set_elastic_constants(S = params['S'])
+            if 'E' in params.keys() or 'nu' in params.keys():
+                print('Warning! Isotropic E and/or nu given but overridden by the compliance matrix S.')
         elif (not params['E'] == None) and (not params['nu'] == None):
             self.set_elastic_constants(E = params['E'], nu = params['nu'])
         else:
