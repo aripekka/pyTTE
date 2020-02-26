@@ -12,7 +12,9 @@ from scipy.constants.codata import physical_constants
 
 from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
-from .elastic_tensors import elastic_matrices
+from .elastic_tensors import elastic_matrices, rotate_elastic_matrix
+from .deformation import isotropic_plate, anisotropic_plate
+from .rotation_matrix import rotate_asymmetry
 
 import xraylib
 
@@ -325,7 +327,7 @@ class TTcrystal:
             if isinstance(kwargs['S'], Quantity) and kwargs['S'].type() == 'pressure^-1':
                 if kwargs['S'].value.shape == (6,6):
                     self.isotropy = 'anisotropic'
-                    self.S = kwargs['S'].copy()
+                    self.S0 = kwargs['S'].copy()
                 else:
                     raise ValueError('Shape of S has to be (6,6)!')
             else:
@@ -342,7 +344,7 @@ class TTcrystal:
                 raise ValueError('E has to be an instance of Quantity of type pressure!')
         else:
             self.isotropy = 'anisotropic'
-            self.S = Quantity(0.01*elastic_matrices(self.crystal_data['name'])[1],'GPa^-1')
+            self.S0 = Quantity(0.01*elastic_matrices(self.crystal_data['name'])[1],'GPa^-1')
             
         #skip this if the function is used as a part of initialization
         if self._initialized:
@@ -375,12 +377,37 @@ class TTcrystal:
             self.update_rotations_and_deformation()
 
     def update_rotations_and_deformation(self):
-        print('HELP! I am update_rotations_and_deformation() and I am not implemented yet!')
+        '''
+        Applies the in-plane and asymmetry rotations to the elastic matrix (for anisotropic crystal) 
+        and calculates the Jacobian of the deformation field based on the elastic parameters and the
+        bending radii.
+        '''
+
+        #Apply rotations of the crystal to the elastic matrix
+        if self.isotropy == 'anisotropic':
+            #TODO: inplane_rotation
+            Rmatrix = rotate_asymmetry(self.asymmetry.in_units('deg'))
+            self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
+        
+        #calculate the depth-dependent deformation jacobian
+        if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
+            self.deformation_jacobian = None
+        elif self.isotropy == 'anisotropic':
+            self.deformation_jacobian = anisotropic_plate(self.Rx.in_units('mm'),
+                                                          self.Ry.in_units('mm'),
+                                                          self.S.in_units('GPa^-1'),
+                                                          self.thickness.in_units('mm'))
+
+        else:
+            self.deformation_jacobian = isotropic_plate(self.Rx.in_units('mm'),
+                                                        self.Ry.in_units('mm'),
+                                                        self.nu,
+                                                        self.thickness.in_units('mm'))
 
     def __str__(self):
         #TODO: Improve output presentation
         if self.isotropy == 'anisotropic':
-            elastic_str = 'S:\n' + str(self.S)
+            elastic_str = 'S (with rotations applied):\n' + str(self.S)
         else:
             elastic_str = 'E: ' + str(self.E) + '\nnu: '+ str(self.nu) 
 
