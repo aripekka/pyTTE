@@ -14,7 +14,7 @@ from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
 from .elastic_tensors import elastic_matrices, rotate_elastic_matrix
 from .deformation import isotropic_plate, anisotropic_plate
-from .rotation_matrix import rotate_asymmetry
+from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis
 
 import xraylib
 
@@ -389,9 +389,25 @@ class TTcrystal:
 
         #Apply rotations of the crystal to the elastic matrix
         if self.isotropy == 'anisotropic':
-            #TODO: hkl||z alignment and inplane_rotation
-            Rmatrix = rotate_asymmetry(self.asymmetry.in_units('deg'))
+            #TODO: inplane_rotation
+
+            #calculate reciprocal vector of the diffraction hkl
+            hkl = self.hkl[0]*self.reciprocal_primitives[:,0] +\
+                  self.hkl[1]*self.reciprocal_primitives[:,1] +\
+                  self.hkl[2]*self.reciprocal_primitives[:,2]
+
+            #hkl||z alignment
+            R1 = align_vector_with_z_axis(hkl)
+
+            #asymmetry alignment
+            R2 = rotate_asymmetry(self.asymmetry.in_units('deg'))
+
+            Rmatrix = np.dot(R2,R1)            
+
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
+            self.crystal_directions = np.dot(Rmatrix.T,self.direct_primitives)
+
+            print(self.crystal_directions)
         
         #calculate the depth-dependent deformation jacobian
         if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
