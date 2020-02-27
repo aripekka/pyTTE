@@ -14,7 +14,7 @@ from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
 from .elastic_tensors import elastic_matrices, rotate_elastic_matrix
 from .deformation import isotropic_plate, anisotropic_plate
-from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis
+from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis, inplane_rotation
 
 import xraylib
 
@@ -471,11 +471,13 @@ class TTcrystal:
 
             #hkl||z alignment
             R1 = align_vector_with_z_axis(hkl)
+            
+            R2 = inplane_rotation(self.in_plane_rotation.in_units('deg'))
 
             #asymmetry alignment
-            R2 = rotate_asymmetry(self.asymmetry.in_units('deg'))
+            R3 = rotate_asymmetry(self.asymmetry.in_units('deg'))
 
-            Rmatrix = np.dot(R2,R1)            
+            Rmatrix = np.dot(R3,np.dot(R2,R1))
 
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
             self.crystal_directions = np.dot(Rmatrix.T,self.direct_primitives)
