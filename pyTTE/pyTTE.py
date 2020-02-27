@@ -41,40 +41,48 @@ class TTcrystal:
             thickness    = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
 
             (Optional)
-            asymmetry    = clockwise-positive asymmetry angle wrapped in a Quantity instance.
-                           0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
-            debye_waller = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
+            asymmetry         = clockwise-positive asymmetry angle wrapped in a Quantity instance.
+                                0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+            in_plane_rotation = counterclockwise-positive rotation of the crystal directions about hkl-vector 
+                                wrapped in a Quantity instance of type angle
+                                OR
+                                a crystal direction [q,r,s] corresponding to a direct space vector
+                                R = q*a1 + r*a2 + s*a3 which will be rotated about the hkl vector so that its
+                                component perpendicular to hkl (and the crystal as a whole with it) will be 
+                                aligned with the y-axis. Will raise an error if R || hkl.
+            debye_waller      = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
 
-            S            = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
-                           compliance matrix given by elastic_tensors and given E and nu, if given.
+            S                 = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
+                                compliance matrix given by elastic_tensors and given E and nu, if given.
 
-                           If an input file is used, the non-zero elements of the compliance matrix
-                           in the upper triangle and on the diagonal should be given in the units GPa^-1 
-                           (order doesn't matter). Any lower triangle inputs will be omitted as they are 
-                           obtained symmetrically from the upper triangle. 
+                                If an input file is used, the non-zero elements of the compliance matrix
+                                in the upper triangle and on the diagonal should be given in the units GPa^-1 
+                                (order doesn't matter). Any lower triangle inputs will be omitted as they are 
+                                obtained symmetrically from the upper triangle. 
 
-                           Example input: 
-                               S11  0.00723
-                               S22  0.00723
-                               S33  0.00723
-                               S12 -0.00214
-                               etc.
+                                Example input: 
+                                    S11  0.00723
+                                    S22  0.00723
+                                    S33  0.00723
+                                    S12 -0.00214
+                                    etc.
 
-            E            = Young's modulus for isotropic material in a Quantity instance. Overrides the 
-                           default compliance matrix. Neglected if S is given
-            nu           = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
-                           Neglected if S is given.
+            E                 = Young's modulus for isotropic material in a Quantity instance. Overrides the 
+                                default compliance matrix. Neglected if S is given
+            nu                = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
+                                Neglected if S is given.
 
-            Rx, Ry       = Meridional and sagittal bending radii for toroidal bending wrapped in 
-                           Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf (no bending). 
-                           Overridden by R.
-            R            = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry. 
+            Rx, Ry            = Meridional and sagittal bending radii for toroidal bending wrapped in 
+                                Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf (no bending). 
+                                Overridden by R.
+            R                 = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry. 
         '''
 
         params = {}
 
         #set the default values for the optional parameters
         params['asymmetry'] = Quantity(0,'deg')
+        params['in_plane_rotation'] = Quantity(0,'deg')
         params['debye_waller'] = 1.0
 
         params['S']  = None
@@ -106,6 +114,10 @@ class TTcrystal:
                         params['crystal'] = ls[1]
                     elif ls[0] == 'hkl' and len(ls) == 4:
                         params['hkl'] = [int(ls[1]),int(ls[2]),int(ls[3])]
+                    elif ls[0] == 'in_plane_rotation' and len(ls) == 4:
+                        params['in_plane_rotation'] = [float(ls[1]),float(ls[2]),float(ls[3])]
+                    elif ls[0] == 'in_plane_rotation' and len(ls) == 3:
+                        params['in_plane_rotation'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'thickness' and len(ls) == 3:
                         params['thickness'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'asymmetry' and len(ls) == 3:
@@ -156,6 +168,8 @@ class TTcrystal:
             #Optional keywords
             if 'asymmetry' in kwargs.keys():
                 params['asymmetry'] = kwargs['asymmetry']
+            if 'in_plane_rotation' in kwargs.keys():
+                params['in_plane_rotation'] = kwargs['in_plane_rotation']
             if 'debye_waller' in kwargs.keys():
                 params['debye_waller'] = kwargs['debye_waller']
             if 'S' in kwargs.keys():
@@ -189,6 +203,7 @@ class TTcrystal:
         self.set_reflection(params['hkl'])
         self.set_thickness(params['thickness'])
         self.set_asymmetry(params['asymmetry'])
+        self.set_in_plane_rotation(params['in_plane_rotation'])
         self.set_debye_waller(params['debye_waller'])
 
         if not params['S'] == None:
@@ -200,7 +215,7 @@ class TTcrystal:
         else:
             self.set_elastic_constants()
 
-        self.set_bending_radii(params['Rx'],params['Ry'])
+        self.set_bending_radii(params['Rx'], params['Ry'])
 
         self.update_rotations_and_deformation()
         self._initialized = True
@@ -288,6 +303,64 @@ class TTcrystal:
             self.asymmetry = asymmetry.copy()
         else:
             raise ValueError('Asymmetry angle has to be a Quantity instance of type angle!')
+
+        #skip this if the function is used as a part of initialization
+        if self._initialized:
+            self.update_rotations_and_deformation()
+
+    def set_in_plane_rotation(self, in_plane_rotation):
+        '''
+        Set the in-plane rotation angle.
+
+        Input:
+            in_plane_rotation = counterclockwise-positive rotation of the crystal directions about hkl-vector 
+                                wrapped in a Quantity instance of type angle
+                                OR
+                                a crystal direction [q,r,s] corresponding to a direct space vector
+                                R = q*a1 + r*a2 + s*a3 which will be rotated about the hkl vector so that its
+                                component perpendicular to hkl (and the crystal as a whole with it) will be 
+                                aligned with the y-axis. Will raise an error if R || hkl.
+        '''
+
+        if isinstance(in_plane_rotation, Quantity) and in_plane_rotation.type() == 'angle':
+            self.in_plane_rotation = in_plane_rotation.copy()
+        elif len(in_plane_rotation) == 3:
+            #Check the list entry types
+            for i in in_plane_rotation:
+                if not type(i) in [type(1),type(1.0)]:
+                    raise ValueError('In-plane rotation angle has to be a Quantity instance of type angle OR a list of floats size 3!')
+
+            #calculate the given crystal direction in the direct space
+            r = in_plane_rotation[0]*self.direct_primitives[:,0] +\
+                in_plane_rotation[1]*self.direct_primitives[:,1] +\
+                in_plane_rotation[2]*self.direct_primitives[:,2]
+
+            #calculate reciprocal vector of the diffraction hkl
+            h = self.hkl[0]*self.reciprocal_primitives[:,0] +\
+                self.hkl[1]*self.reciprocal_primitives[:,1] +\
+                self.hkl[2]*self.reciprocal_primitives[:,2]
+
+            #check the relative angle of r and h
+            if abs(np.dot(r,h) - np.sqrt(np.dot(r,r)*np.dot(h,h))) < np.finfo(type(1.0)).eps:
+                raise ValueError('in_plane_rotation can not be parallel to the reciprocal diffraction vector!')
+
+            #hkl||z alignment
+            R = align_vector_with_z_axis(h)
+
+            #rotate r to a coordinate system where z||hkl            
+            r_rot = np.dot(R,r)
+
+            #Calculate the inclination between r_rot and the xy-plane
+            incl = np.arctan2(r_rot[2],np.sqrt(r_rot[0]**2 + r_rot[1]**2))
+
+            print('Deviation of the given in_plane_rotation direction from the rotation plane: ' + str(np.degrees(incl)) + ' deg.')
+            
+            #The angle between the direction vector projected to the new xy-plane and the y-axis
+            rotation_angle = np.arctan2(r_rot[0],r_rot[1])
+
+            self.in_plane_rotation = Quantity(np.degrees(rotation_angle),'deg')
+        else:
+            raise ValueError('In-plane rotation angle has to be a Quantity instance of type angle OR a list of floats size 3!')
 
         #skip this if the function is used as a part of initialization
         if self._initialized:
@@ -439,6 +512,7 @@ class TTcrystal:
                'Reciprocal primitive vectors (columns, in 1/nm):\n'+ np.array2string(10*self.reciprocal_primitives,precision=4,suppress_small=True)+'\n'+\
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
+               'In-plane rotation angle: ' + str(self.in_plane_rotation)+'\n'+\
                'Thickness: ' + str(self.thickness)+'\n'+\
                'Meridional bending radius: ' + str(self.Rx) +'\n'+\
                'Sagittal bending radius: ' + str(self.Ry) +'\n'+\
