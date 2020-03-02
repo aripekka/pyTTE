@@ -28,7 +28,8 @@ c_0 = \frac{k \chi_0}{2} \qquad c_{h,\bar{h}} = \frac{k C \chi_{h,\bar{h}}}{2},
 \end{equation} 
 where $k=2 \pi/\lambda$ and $C = 1$ for $\sigma$-polarization and $\cos 2 \theta_B$ for $\pi$-polarization. The deviation parameter $\beta = (k_h^2 - k_0^2)/2k_h$ is quite often approximated by $\beta \approx k \Delta \theta \sin 2 \theta_B$, where $\Delta \theta$ is the deviation from the Bragg angle. However, since this approximation ceases to be valid near the backscattering condition, PyTTE uses a more general form
 \begin{equation}
-\beta = \frac{2 \pi}{d_h}\left(\frac{\lambda}{2 d_h}-\sin \theta \right) = h \left(\frac{\lambda}{2 d_h}-\sin \theta \right),
+\beta = \frac{2 \pi}{d_h}\left(\sin \theta - \frac{\lambda}{2 d_h}\right) = h \left(\sin \theta - \frac{\lambda}{2 d_h}\right),
+\label{eq:beta}
 \end{equation}
 where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes.
 
@@ -53,6 +54,37 @@ In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of
 \frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
 \end{equation}
 by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\subsection{Automatic scan limit calculation}
+Locally, the diffraction takes place most efficiently in the crystal when 
+\begin{equation}
+\left(1 + \frac{\gamma_0}{\gamma_h}\right) \mathrm{Re} [c_0]  + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} = 0
+\end{equation}
+in Eq.~\eqref{eq:xi}, which is effectively Bragg's law corrected for the refraction and influence of deformation. The scan limits can be thus be calculated by finding the maximum and minimum values for the deformation term inside the crystal and calculating the corresponding $\beta$-range. In addition we have to take into account that every reflection has a finite width and extend the scan range accordingly. According to \cite{stepanov_server}, the Darwin width of a perfect thick crystal in the case of symmetric Bragg reflection is
+\begin{equation}
+\Delta \theta_D = \frac{2 \sqrt{|\chi_h \chi_{\bar{h}}|}}{\sin 2 \theta_B}
+\end{equation}
+except near $\theta_B = \pi/2$ when 
+\begin{equation}
+\Delta \theta_D = \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}.
+\end{equation}
+is more appropriate. For scan limit calculation purposes we combine the two expressions continuously in the following way:
+\begin{equation}
+\Delta \theta_D (\theta_B)  = \begin{dcases}
+\left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2} & \mathrm{when} \quad \sin 2\theta_B \leq \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}\\
+\frac{2 \sqrt{|\chi_h \chi_{\bar{h}}|}}{\sin 2 \theta_B} & \mathrm{when} \quad \sin 2\theta_B > \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}
+\end{dcases}
+\end{equation} 
+Substituting this in Eq.~\eqref{eq:beta} and expanding up to the first order, we get
+\begin{equation}
+|\Delta \beta| = \sigma h \Delta \theta_D (\theta_B) \cos \theta_B,
+\end{equation}
+where $\sigma = 2$ is a scaling factor which makes the scan range look nicer especially in the absence of a deformation field. Therefore the scan limits are
+\begin{align}
+\beta_{\mathrm{min}} &= - \frac{k}{2} \left( 1 + \frac{\gamma_0}{\gamma_h} \right) \mathrm{Re}[\chi_0] - \max \left[ \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] - \sigma h \Delta \theta_D (\theta_B) \cos \theta_B \\
+\beta_{\mathrm{max}} &= -\frac{k}{2} \left( 1 + \frac{\gamma_0}{\gamma_h} \right) \mathrm{Re}[\chi_0] - \min \left[  \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] +  \sigma h \Delta \theta_D (\theta_B) \cos \theta_B
+\end{align}
+It should be noted, that the limits above do not aim to be perfect but act more like as a suggestion. For example, the Darwin width term used may fall short if the crystal is strongly bent or very thin. Also, the first order expansion of $\beta$ is not accurate in the back-scattering.
 
 \section{Deformation}
 As stated in the previous section, the deformation is introduced through $\partial_h(\mathbf{h}\cdot \mathbf{u})$ term where $\mathbf{u}$ is the displacement vector field. Taking the asymmetry into account, the reciprocal vector is given by $\mathbf{h} = h \sin \varphi \hat{\mathbf{x}} + h \cos \varphi \hat{\mathbf{z}}$. Thus

@@ -669,19 +669,123 @@ class TakagiTaupin:
         ################################################
 
         hc = Quantity(1.23984193,'eV um') #Planck's constant * speed of light
-
+      
         crystal = self.crystal_object.crystal_data
         hkl = self.crystal_object.hkl
+        phi = self.crystal_object.asymmetry
+        displacement_jacobian = self.crystal_object.displacement_jacobian
+        debye_waller = self.crystal_object.debye_waller
 
-        d   = Quantity(xraylib.Crystal_dSpacing(crystal,*hkl),'A')    #spacing of Bragg planes
-        V   = Quantity(crystal['volume'],'A^3')                       #volume of unit cell
-        r_e = Quantity(2.81794033e-15,'m')                            #classical electron radius
-        h   = 2*np.pi/d                                               #reciprocal wave vector length
+        d   = Quantity(xraylib.Crystal_dSpacing(crystal,*hkl),'A')     #spacing of Bragg planes
+        V   = Quantity(crystal['volume'],'A^3')                        #volume of unit cell
+        r_e = Quantity(2.81794033e-15,'m')                             #classical electron radius
+        h   = 2*np.pi/d                                                #reciprocal wave vector length
 
+        #Energies and angles corresponding to the constant parameter and its counterpart given by Bragg's law
+        if self.scan_object.scantype == 'energy':
+            theta_bragg = self.scan_object.constant
+            energy_bragg = hc/(2*d*np.sin(theta_bragg.in_units('rad')))
+        else:
+            energy_bragg = self.scan_object.constant
+            if not (hc/(2*d*energy_bragg)).in_units('1') > 1:
+                theta_bragg = Quantity(np.arcsin((hc/(2*d*energy_bragg)).in_units('1')), 'rad')
+            else:
+                print('Given energy below the backscattering energy!')
+                print('Setting theta to 90 deg.')
+                theta_bragg = Quantity(90, 'deg')
+
+        #set the scan vector
         if self.scan_object.scan[0] == 'automatic':
-            print('AUTOMATIC LIMITS NOT IMPLEMENTED YET!')
-            print('Function terminated.')
-            return None
+
+            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
+            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
+            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+
+            cte = -(r_e * (hc/energy_bragg)**2/(np.pi * V)).in_units('1') #conversion factor from crystal structure factor to susceptibility
+
+            chi0 = np.conj(cte*F0)
+            chih = np.conj(cte*Fh)
+            chib = np.conj(cte*Fb)
+
+            gamma0 = 1/np.sin((theta_bragg+phi).in_units('rad'))
+            gammah = 1/np.sin((theta_bragg-phi).in_units('rad'))
+
+            #Find the (rough) maximum and minimum of the deformation term
+            if not displacement_jacobian == None:
+                z = np.linspace(0,-self.crystal_object.thickness.in_units('um'),1000)
+                x = -z*np.cos((theta_bragg+phi).in_units('rad'))/np.sin((theta_bragg+phi).in_units('rad'))
+
+                sin_phi = np.sin(phi.in_units('rad'))
+                cos_phi = np.cos(phi.in_units('rad'))
+                sin_alphah = np.sin((theta_bragg-phi).in_units('rad'))
+                cos_alphah = np.cos((theta_bragg-phi).in_units('rad'))
+
+                u_jac = displacement_jacobian(x[0],z[0])
+                h_um = h.in_units('um^-1')
+
+                def_min = h_um*(  sin_phi*cos_alphah*u_jac[0][0]
+                                + sin_phi*sin_alphah*u_jac[0][1]
+                                + cos_phi*cos_alphah*u_jac[1][0] 
+                                + cos_phi*sin_alphah*u_jac[1][1])            
+                def_max = def_min
+
+                for i in range(1,z.size):
+                    u_jac = displacement_jacobian(x[i],z[i])
+
+                    deform = h_um*(  sin_phi*cos_alphah*u_jac[0][0]
+                                   + sin_phi*sin_alphah*u_jac[0][1]
+                                   + cos_phi*cos_alphah*u_jac[1][0] 
+                                   + cos_phi*sin_alphah*u_jac[1][1])            
+                    if deform < def_min:
+                        def_min = deform
+                    if deform > def_max:
+                        def_max = deform
+            else:
+                def_min = 0.0
+                def_max = 0.0
+
+            #expand the range by the backscatter Darwin width
+            if np.sin(2*theta_bragg.in_units('rad') > np.sqrt(2*np.sqrt(np.abs(chih*chib)))):
+                darwin_width_term = 2*np.sqrt(np.abs(chih*chib))/np.sin(2*theta_bragg.in_units('rad'))*h*np.cos(theta_bragg.in_units('rad'))
+            else:
+                darwin_width_term = np.sqrt(2*np.sqrt(np.abs(chih*chib)))*h*np.cos(theta_bragg.in_units('rad'))
+
+            k_bragg = 2*np.pi*energy_bragg/hc 
+            b_const_term = -0.5*k_bragg*(1 + gamma0/gammah)*np.real(chi0)
+
+            beta_min = b_const_term - Quantity(def_max,'um^-1') - 2*darwin_width_term
+            beta_max = b_const_term - Quantity(def_min,'um^-1') + 2*darwin_width_term
+            print('b_const',b_const_term)
+            print('def_min',def_min)
+            print('def_max',def_max)
+            print('darwin_width_term',darwin_width_term)
+            print('beta_min',beta_min)
+            print('beta_max',beta_max)
+
+            #convert beta limits to scan vectors
+            if self.scan_object.scantype == 'energy':
+                energy_min = beta_min*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
+                energy_max = beta_max*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
+
+                print('energy_min',energy_min)
+                print('energy_max',energy_max)
+
+                scan = Quantity(np.linspace(energy_min.in_units('meV'),energy_max.in_units('meV'),self.scan_object.scan[1]),'meV')
+                scan_steps = scan.value.size
+                scan_shape = scan.value.shape
+            else:
+                theta_min  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_min/h).in_units('1')),'rad')-theta_bragg
+                theta_max  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')),'rad')-theta_bragg
+
+                print('theta_min',theta_min)
+                print('theta_max',theta_max)
+
+
+                scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),self.scan_object.scan[1]),'urad')
+                scan_steps = scan.value.size
+                scan_shape = scan.value.shape
+
+
         else:
             scan = self.scan_object.scan[1]
             scan_steps = scan.value.size
@@ -689,24 +793,11 @@ class TakagiTaupin:
 
 
         if self.scan_object.scantype == 'energy':
-            theta0 = self.scan_object.constant
-            theta  = theta0
-
-            energy0 = hc/(2*d*np.sin(theta.in_units('rad')))
-            energy  = energy0 + scan
-
+            theta  = theta_bragg
+            energy  = energy_bragg + scan
         else:
-            energy0 = self.scan_object.constant
-            energy = energy0
-
-            if not hc/(2*d*energy) > 1:
-                theta0 = Quantity(np.arcsin((hc/(2*d*energy)).in_units('1')), 'rad')
-            else:
-                print('Given energy below the backscattering energy!')
-                print('Setting theta to 90 deg.')
-                theta0 = Quantity(90, 'deg')
-
-            theta = theta0 + scan
+            energy = energy_bragg
+            theta = theta_bragg + scan
 
         wavelength = hc/energy
         k = 2*np.pi/wavelength
@@ -723,9 +814,6 @@ class TakagiTaupin:
 
         print('wavelength',wavelength)
         print('k',k)
-
-        #asymmetry angle
-        phi = self.crystal_object.asymmetry
 
         #Incidence and exit angles
         alpha0 = theta+phi
@@ -752,15 +840,15 @@ class TakagiTaupin:
 
         #DEBUG
         print('Asymmetry angle : ', phi)
-        print('Wavelength      : ', hc/energy0)
-        print('Energy          : ', energy0.in_units('keV'), ' keV ')       
-        print('Bragg angle     : ', theta0)
-        print('Incidence angle : ', theta0+phi)
-        print('Exit angle      : ', theta0-phi)
+        print('Wavelength      : ', hc/energy_bragg)
+        print('Energy          : ', energy_bragg.in_units('keV'), ' keV ')       
+        print('Bragg angle     : ', theta_bragg)
+        print('Incidence angle : ', theta_bragg+phi)
+        print('Exit angle      : ', theta_bragg-phi)
         print('')
 
         #Compute susceptibilities
-        debye_waller = self.crystal_object.debye_waller
+        cte = -(r_e * wavelength*wavelength/(np.pi * V)).in_units('1') #conversion factor from crystal structure factor to susceptibility
 
         if self.scan_object.scantype == 'energy':
             F0 = np.zeros(scan_shape,dtype=np.complex)
@@ -772,11 +860,10 @@ class TakagiTaupin:
                 Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
                 Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
         else:
-            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
-            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
-            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy0.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
+            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
+            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
 
-        cte = -(r_e * wavelength*wavelength/(np.pi * V)).in_units('1')
         chi0 = np.conj(cte*F0)
         chih = np.conj(cte*Fh)
         chib = np.conj(cte*Fb)
@@ -812,12 +899,6 @@ class TakagiTaupin:
 
         print(c0)
         print(beta)
-
-        displacement_jacobian = self.crystal_object.displacement_jacobian
-
-        print(displacement_jacobian)
-        print(displacement_jacobian(0,0))
-        print(displacement_jacobian(0,-self.crystal_object.thickness.in_units('um')))
 
 
         #############
@@ -907,14 +988,14 @@ class TakagiTaupin:
 
                 r=ode(TTE,TTE_jac)
 
-            r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=1e-11,max_step=thickness,nsteps=50000)
+            r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=1e-12,max_step=thickness,nsteps=50000)
         
+            #Update the solving process
             lock.acquire()
             steps_calculated.value = steps_calculated.value + 1
             sys.stdout.write('\rSolving...%0.1f%%' % (100*(steps_calculated.value)/scan_steps,))  
             sys.stdout.flush()
             lock.release()            
-
 
             if geometry == 'bragg':
                 r.set_initial_value(0,-thickness)
