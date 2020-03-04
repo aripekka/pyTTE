@@ -206,6 +206,12 @@ Assuming that at least either of $h$ an $k$ is non-zero, the rotation of $\mathb
 \end{equation}
 If $h=k=0$, a rotation of $\theta = \pi$ about $\mathbf{u} = -\hat{\mathbf{y}}$ is applied when $l<0$; no rotation is needed for $l>0$. For the in-plane rotation (step 2), the axis is $\mathbf{u} = [0,0,1]^{\mathrm{T}}$ and for the asymmetry rotation (step 3) $\mathbf{u} = [0,1,0]^{\mathrm{T}}$ and $\theta = \phi$.\footnote{Note that $\phi$ is defined clockwise-positive but about $-\hat{\mathbf{y}}$, not $\hat{\mathbf{y}}$}
 
+The crystal directions $[n_1' n_2' n_3']$ after a rotation $Q$ are calculated as follows
+\begin{equation}
+ \left[\begin{matrix} n_1' \\ n_2' \\ n_3' \end{matrix}\right] = 
+ (Q \left[\begin{matrix} \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \end{matrix} \right])^{-1} \mathbf{r}
+\end{equation}
+where $\mathbf{r}$ is an arbitrary direction in terms of Cartesian coordinates. (Although not clear from the notation, $Q \left[\begin{matrix} \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \end{matrix} \right]$ and it's inverse are square matrices.)
 
 \bibliographystyle{unsrt}
 \bibliography{documentation}
