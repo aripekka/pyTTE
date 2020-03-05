@@ -1,4 +1,6 @@
-from .pyTTE import TakagiTaupin, TTcrystal, TTscan, takagitaupin 
+from .pyTTE import TakagiTaupin, TTcrystal, TTscan
+from .legacy import takagitaupin 
+
 from . import deformation
 from . import elastic_tensors
 from .quantity import Quantity
