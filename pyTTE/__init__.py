@@ -5,4 +5,4 @@ from . import deformation
 from . import elastic_tensors
 from .quantity import Quantity
 
-__all__ = ['TakagiTaupin', 'TTcrystal', 'TTscan', 'takagitaupin', 'deformation', 'elastic_tensors']
+__all__ = ['TakagiTaupin', 'TTcrystal', 'TTscan', 'takagitaupin', 'deformation', 'elastic_tensors', 'Quantity']
