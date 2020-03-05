@@ -81,19 +81,22 @@ class TTcrystal:
         params = {}
 
         #set the default values for the optional parameters
-        params['asymmetry'] = Quantity(0,'deg')
+        params['asymmetry']         = Quantity(0,'deg')
         params['in_plane_rotation'] = Quantity(0,'deg')
-        params['debye_waller'] = 1.0
+        params['debye_waller']      = 1.0
 
-        params['S']  = None
-        params['E']  = None
+        params['S']  = None 
+        params['E']  = None 
         params['nu'] = None
 
         params['Rx'] = None
         params['Ry'] = None
 
         if not filepath == None:
-            #read file contents
+            #####################################
+            #Read crystal parameters from a file#
+            #####################################
+
             try:
                 f = open(filepath,'r')    
                 lines = f.readlines()
@@ -108,7 +111,7 @@ class TTcrystal:
 
             #check and parse parameters
             for line in lines:
-                if not line[0] == '#':  #skip comments
+                if not line[0] == '#':  #skip comment lines
                     ls = line.split() 
                     if ls[0] == 'crystal' and len(ls) == 2:
                         params['crystal'] = ls[1]
@@ -147,16 +150,21 @@ class TTcrystal:
                     else:
                         print('Skipped an invalid line in the file: ' + line)
 
-            #Finalize the S matrix
             if is_S_given:
+                #Finalize the S matrix
                 params['S'] = Quantity(S_matrix,'GPa^-1') 
 
-            #Check the presence of the required crystal inputs
+            #Check the presence of the mandatory keywords
             try:
                 params['crystal']; params['hkl']; params['thickness']
             except:
                 raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')           
+
         else:
+            ####################################
+            #Use the crystal parameter keywords#
+            ####################################
+
             #Check the presence of the required crystal inputs
             try:
                 params['crystal'] = kwargs['crystal']
@@ -193,10 +201,14 @@ class TTcrystal:
                 params['Rx'] = kwargs['R']
                 params['Ry'] = kwargs['R']
 
+        ###########################################
+        #Initialize with the read/given parameters#
+        ###########################################
+
         #used to prevent recalculation of the deformation in parameter set functions during init
         self._initialized = False
 
-        #determines the length scale in which the position coordinate to the jacobian are given 
+        #determines the length scale in which the position coordinate to the jacobian are given
         self._jacobian_length_unit = 'um'
 
         self.set_crystal(params['crystal'])
@@ -218,6 +230,7 @@ class TTcrystal:
         self.set_bending_radii(params['Rx'], params['Ry'])
 
         self.update_rotations_and_deformation()
+
         self._initialized = True
 
     def set_crystal(self, crystal_str):
@@ -480,9 +493,11 @@ class TTcrystal:
             Rmatrix = np.dot(R3,np.dot(R2,R1))
 
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
-            self.crystal_directions = np.dot(Rmatrix.T,self.direct_primitives)
 
-            print(self.crystal_directions)
+            #rotate the primitive vectors
+            dir_prim_rot = np.dot(Rmatrix,self.direct_primitives)
+            #calculate the basis transform matrix from cartesian to crystal direction indices, whose columns are equal to crystal directions along main axes 
+            self.crystal_directions = np.linalg.inv(dir_prim_rot)
         
         #calculate the depth-dependent deformation jacobian
         if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
@@ -502,23 +517,33 @@ class TTcrystal:
     def __str__(self):
         #TODO: Improve output presentation
         if self.isotropy == 'anisotropic':
-            elastic_str = 'S (with rotations applied):\n' + str(self.S)
+            elastic_str = 'Compliance matrix S (with rotations applied):\n' + np.array2string(self.S.in_units('GPa^-1'),precision=4, suppress_small =True) + ' GPa^-1'
         else:
-            elastic_str = 'E: ' + str(self.E) + '\nnu: '+ str(self.nu) 
+            elastic_str = "Young's modulus E: " + str(self.E) + "\nPoisson's ratio nu: "+ str(self.nu) 
 
         return 'Crystal: ' + self.crystal_data['name'] + '\n' +\
                'Crystallographic parameters:\n' +\
                '    a = ' + str(self.crystal_data['a']*0.1)[:8] + ' nm,  b = ' + str(self.crystal_data['b']*0.1)[:8] + ' nm,  c = ' + str(self.crystal_data['c']*0.1)[:8] + ' nm\n'+\
                '    alpha = ' + str(self.crystal_data['alpha']) + ' deg,  beta = ' + str(self.crystal_data['beta']) + ' nm,  gamma = ' + str(self.crystal_data['gamma']) + ' deg\n'+\
-               'Direct primitive vectors (columns, in nm):\n'+ np.array2string(0.1*self.direct_primitives,precision=4,suppress_small=True)+'\n'+\
-               'Reciprocal primitive vectors (columns, in 1/nm):\n'+ np.array2string(10*self.reciprocal_primitives,precision=4,suppress_small=True)+'\n'+\
+               'Direct primitive vectors (before rotations, in nm):\n'+\
+               '    a1 = '+np.array2string(0.1*self.direct_primitives[:,0],precision=4,suppress_small=True)+'\n'+\
+               '    a2 = '+np.array2string(0.1*self.direct_primitives[:,1],precision=4,suppress_small=True)+'\n'+\
+               '    a3 = '+np.array2string(0.1*self.direct_primitives[:,2],precision=4,suppress_small=True)+'\n'+\
+               'Reciprocal primitive vectors (before rotations, in 1/nm):\n' +\
+               '    b1 = ' + np.array2string(10*self.reciprocal_primitives[:,0],precision=4,suppress_small=True)+'\n'+\
+               '    b2 = ' + np.array2string(10*self.reciprocal_primitives[:,1],precision=4,suppress_small=True)+'\n'+\
+               '    b3 = ' + np.array2string(10*self.reciprocal_primitives[:,2],precision=4,suppress_small=True)+'\n'+\
+               'Crystal thickness: ' + str(self.thickness)+'\n\n'+\
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
                'In-plane rotation angle: ' + str(self.in_plane_rotation)+'\n'+\
-               'Thickness: ' + str(self.thickness)+'\n'+\
+               'Crystal directions parallel to the Cartesian axes (after rotations):\n'+\
+               '    x || ' + np.array2string(self.crystal_directions[:,0]/self.crystal_directions[:,0].max(),precision=4,suppress_small=True)+'\n'+\
+               '    y || ' + np.array2string(self.crystal_directions[:,1]/self.crystal_directions[:,1].max(),precision=4,suppress_small=True)+'\n'+\
+               '    z || ' + np.array2string(self.crystal_directions[:,2]/self.crystal_directions[:,2].max(),precision=4,suppress_small=True)+'\n\n'+\
                'Meridional bending radius: ' + str(self.Rx) +'\n'+\
-               'Sagittal bending radius: ' + str(self.Ry) +'\n'+\
-               'Elastic material: ' + str(self.isotropy) +'\n' + elastic_str        
+               'Sagittal bending radius: ' + str(self.Ry) +'\n\n'+\
+               'Material elastic isotropy: ' + str(self.isotropy) +'\n' + elastic_str        
 class TTscan:
     
     #Class containing all the parameters for the energy or angle scan to be simulated.   
@@ -755,20 +780,16 @@ class TakagiTaupin:
 
             beta_min = b_const_term - Quantity(def_max,'um^-1') - 2*darwin_width_term
             beta_max = b_const_term - Quantity(def_min,'um^-1') + 2*darwin_width_term
-            print('b_const',b_const_term)
-            print('def_min',def_min)
-            print('def_max',def_max)
-            print('darwin_width_term',darwin_width_term)
-            print('beta_min',beta_min)
-            print('beta_max',beta_max)
 
             #convert beta limits to scan vectors
             if self.scan_object.scantype == 'energy':
                 energy_min = beta_min*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
                 energy_max = beta_max*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
 
-                print('energy_min',energy_min)
-                print('energy_max',energy_max)
+                print('Using automatically determined scan limits:')
+                print('E min:', energy_min)
+                print('E max:', energy_max)
+                print('')
 
                 scan = Quantity(np.linspace(energy_min.in_units('meV'),energy_max.in_units('meV'),self.scan_object.scan[1]),'meV')
                 scan_steps = scan.value.size
@@ -777,20 +798,18 @@ class TakagiTaupin:
                 theta_min  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_min/h).in_units('1')),'rad')-theta_bragg
                 theta_max  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')),'rad')-theta_bragg
 
-                print('theta_min',theta_min)
-                print('theta_max',theta_max)
-
+                print('Using automatically determined scan limits:')
+                print('Theta min:', theta_min)
+                print('Theta max:', theta_max)
+                print('')
 
                 scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),self.scan_object.scan[1]),'urad')
                 scan_steps = scan.value.size
                 scan_shape = scan.value.shape
-
-
         else:
             scan = self.scan_object.scan[1]
             scan_steps = scan.value.size
             scan_shape = scan.value.shape
-
 
         if self.scan_object.scantype == 'energy':
             theta  = theta_bragg
@@ -801,19 +820,6 @@ class TakagiTaupin:
 
         wavelength = hc/energy
         k = 2*np.pi/wavelength
-
-        #DEBUG:
-        print('hc',hc)
-        print('d',d)
-        print('V',V)
-        print('r_e',r_e)
-        print('h',h)
-
-        print('theta',theta)
-        print('energy',energy.in_units('keV'))
-
-        print('wavelength',wavelength)
-        print('k',k)
 
         #Incidence and exit angles
         alpha0 = theta+phi
@@ -897,10 +903,6 @@ class TakagiTaupin:
         #deviation from the kinematical Bragg condition for unstrained crystal
         beta = h*gammah*(np.sin(theta.in_units('rad'))-(wavelength/(2*d)).in_units('1'))
 
-        print(c0)
-        print(beta)
-
-
         #############
         #INTEGRATION#
         #############
@@ -915,9 +917,9 @@ class TakagiTaupin:
             diffraction = np.zeros(scan_shape)
 
         #Fix the length scale to microns for solving
-        c0 = c0.in_units('um^-1'); ch = ch.in_units('um^-1'); cb = cb.in_units('um^-1')
-        g0 = g0.in_units('um^-1'); gb = gb.in_units('um^-1')
-        beta = beta.in_units('um^-1'); h = h.in_units('um^-1')
+        c0   =   c0.in_units('um^-1'); ch = ch.in_units('um^-1'); cb = cb.in_units('um^-1')
+        g0   =   g0.in_units('um^-1'); gb = gb.in_units('um^-1')
+        beta = beta.in_units('um^-1'); h  =  h.in_units('um^-1')
         thickness = self.crystal_object.thickness.in_units('um')
 
         def integrate_single_scan_step(step):
@@ -1011,7 +1013,8 @@ class TakagiTaupin:
                 return diffraction, forward_diffraction
 
         n_cores = multiprocess.cpu_count()
-        print('Using ' + str(n_cores) + ' cores.')
+    
+        print('\nCalculating the TT-curve using ' + str(n_cores) + ' cores.')
 
         #Solve the equation
         sys.stdout.write('Solving...0%')
@@ -1090,7 +1093,7 @@ class TakagiTaupin:
 
 def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,thickness,displacement_jacobian = None,debyeWaller=1.0,min_int_step=1e-10):
     '''
-    1D TT-solver.
+    1D TT-solver function. Deprecated
     
     Input:
     scantype = 'energy' or 'angle'
