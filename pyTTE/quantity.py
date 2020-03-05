@@ -85,6 +85,21 @@ class Quantity:
         else:
             raise ValueError('Unit of the quantity has to be of str type.') 
 
+
+    ##########################
+    #Overload unary operators#
+    ##########################
+
+    def __pos__(self):
+        return Quantity(self.value, Quantity._unit2str(self.unit))
+
+    def __neg__(self):
+        return Quantity(-self.value, Quantity._unit2str(self.unit))
+
+    ###########################
+    #Overload binary operators#
+    ###########################
+
     def __add__(self,other):        
         return Quantity(self.value + other.in_units(Quantity._unit2str(self.unit)), Quantity._unit2str(self.unit))
 
