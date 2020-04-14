@@ -470,31 +470,32 @@ class TTcrystal:
         bending radii.
         '''
 
+
+        #calculate reciprocal vector of the diffraction hkl
+        hkl = self.hkl[0]*self.reciprocal_primitives[:,0] +\
+              self.hkl[1]*self.reciprocal_primitives[:,1] +\
+              self.hkl[2]*self.reciprocal_primitives[:,2]
+
+        #hkl||z alignment
+        R1 = align_vector_with_z_axis(hkl)
+        
+        R2 = inplane_rotation(self.in_plane_rotation.in_units('deg'))
+
+        #asymmetry alignment
+        R3 = rotate_asymmetry(self.asymmetry.in_units('deg'))
+
+        Rmatrix = np.dot(R3,np.dot(R2,R1))
+
+        #rotate the primitive vectors
+        dir_prim_rot = np.dot(Rmatrix,self.direct_primitives)
+        
+        #calculate the basis transform matrix from cartesian to crystal direction 
+        #indices, whose columns are equal to crystal directions along main axes 
+        self.crystal_directions = np.linalg.inv(dir_prim_rot)
+
         #Apply rotations of the crystal to the elastic matrix
         if self.isotropy == 'anisotropic':
-            #TODO: inplane_rotation
-
-            #calculate reciprocal vector of the diffraction hkl
-            hkl = self.hkl[0]*self.reciprocal_primitives[:,0] +\
-                  self.hkl[1]*self.reciprocal_primitives[:,1] +\
-                  self.hkl[2]*self.reciprocal_primitives[:,2]
-
-            #hkl||z alignment
-            R1 = align_vector_with_z_axis(hkl)
-            
-            R2 = inplane_rotation(self.in_plane_rotation.in_units('deg'))
-
-            #asymmetry alignment
-            R3 = rotate_asymmetry(self.asymmetry.in_units('deg'))
-
-            Rmatrix = np.dot(R3,np.dot(R2,R1))
-
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
-
-            #rotate the primitive vectors
-            dir_prim_rot = np.dot(Rmatrix,self.direct_primitives)
-            #calculate the basis transform matrix from cartesian to crystal direction indices, whose columns are equal to crystal directions along main axes 
-            self.crystal_directions = np.linalg.inv(dir_prim_rot)
         
         #calculate the depth-dependent deformation jacobian
         if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
