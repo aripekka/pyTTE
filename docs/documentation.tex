@@ -8,7 +8,7 @@
 
 
 \author{Ari-Pekka Honkanen}
-\title{PyTTE: The Technical Document\\Version 0.2}
+\title{PyTTE: The Technical Document\\Version 0.3}
 \begin{document}
 \maketitle
 \section{Introduction}
@@ -54,6 +54,18 @@ In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of
 \frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
 \end{equation}
 by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\subsection{Scan vector and refraction correction}
+The scan vector, whether in the energy or angle domain, is given to \textsc{PyTTE} relative to the kinematical diffraction condition $\lambda = 2 d_h \sin \theta$, or equivalently $\beta = 0$. 
+However, it is well-known \cite{Ewald_1986} that due to the refraction of X-rays at the crystal-vacuum interface, the diffraction is not exactly at where the kinematical condition suggests it to be. From Eq.~\eqref{eq:xi} we see, that the true center of the diffraction takes place at $\beta = -(1 + \gamma_0/\gamma_h)\mathrm{Re}[c_0]$. Compared to the kinematical condition, the energy of the centre of the diffraction is changed by
+\begin{equation}
+\frac{\Delta E}{E} = -\left(1 + \frac{\gamma_0}{\gamma_h} \right)\frac{\mathrm{Re}[\chi_0]}{4 \sin^2 \theta}
+\end{equation}
+and the angle by
+\begin{equation} 
+\Delta \theta = -\left(1 + \frac{\gamma_0}{\gamma_h} \right)\frac{\mathrm{Re}[\chi_0]}{4 \sin \theta  \cos \theta}.
+\end{equation}
+The refraction corrections can be applied to the scan vector if needed.
 
 \subsection{Automatic scan limit calculation}
 Locally, the diffraction takes place most efficiently in the crystal when 
