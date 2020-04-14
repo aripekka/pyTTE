@@ -1,9 +1,7 @@
 from __future__ import division, print_function
 import sys
-import os
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from scipy.integrate import ode
 from scipy.constants.codata import physical_constants
