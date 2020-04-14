@@ -860,11 +860,11 @@ class TakagiTaupin:
             Fb = np.zeros(scan_shape,dtype=np.complex)
 
             for ii in range(scan_steps):    
-                F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], 0, 0, 0, debye_waller, 1.0)
+                F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], 0, 0, 0, 1.0, 1.0)
                 Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
                 Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
         else:
-            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
+            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, 1.0, 1.0)
             Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
             Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
 

@@ -144,11 +144,11 @@ def takagitaupin(scantype,scan,constant,polarization,crystal_str,hkl,asymmetry,t
         Fb = np.zeros(escan.shape,dtype=np.complex)
 
         for ii in range(escan.size):    
-            F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, (E0+escan[ii])*1e-6, 0, 0, 0, debyeWaller, 1.0)
+            F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, (E0+escan[ii])*1e-6, 0, 0, 0, 1.0, 1.0)
             Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, (E0+escan[ii])*1e-6, hkl[0], hkl[1], hkl[2], debyeWaller, 1.0)
             Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, (E0+escan[ii])*1e-6, -hkl[0], -hkl[1], -hkl[2], debyeWaller, 1.0)
     else:
-        F0 = xraylib.Crystal_F_H_StructureFactor(crystal, E0*1e-6, 0, 0, 0, debyeWaller, 1.0)
+        F0 = xraylib.Crystal_F_H_StructureFactor(crystal, E0*1e-6, 0, 0, 0, 1.0, 1.0)
         Fh = xraylib.Crystal_F_H_StructureFactor(crystal, E0*1e-6, hkl[0], hkl[1], hkl[2], debyeWaller, 1.0)
         Fb = xraylib.Crystal_F_H_StructureFactor(crystal, E0*1e-6, -hkl[0], -hkl[1], -hkl[2], debyeWaller, 1.0)
 
