@@ -45,7 +45,12 @@ class TTcrystal:
             debye_waller      = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
 
             S                 = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
-                                compliance matrix given by elastic_tensors and given E and nu, if given.
+                                compliance matrix given by elastic_tensors and given E and nu, if given. 
+                                
+                                Note that S is supposed to be in the Cartesian coordinate system aligned
+                                with the conventional unit vectors before any rotations i.e. x || a_1 
+                                and a_2 is in the xy-plane. For rectagular systems this means that the 
+                                Cartesian basis is aligned with the unit vectors. 
 
                                 If an input file is used, the non-zero elements of the compliance matrix
                                 in the upper triangle and on the diagonal should be given in the units GPa^-1 
