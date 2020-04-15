@@ -270,8 +270,14 @@ class TakagiTaupin:
         g0 = 0.5*k*chi0*gamma0*np.ones(scan_shape)
         gb = 0.5*k*C*chib*gamma0*np.ones(scan_shape)
 
-        #deviation from the kinematical Bragg condition for unstrained crystal
-        beta = h*gammah*(np.sin(theta.in_units('rad'))-(wavelength/(2*d)).in_units('1'))
+        #Deviation from the kinematical Bragg condition for unstrained crystal
+        #To avoid catastrophic cancellation, the terms in the substraction are
+        #explicitly casted to 64 bit floats.
+        beta_term1 = np.sin(theta.in_units('rad')).as_type(np.float64)
+        beta_term2 = wavelength.in_units('nm').as_type(np.float64)
+        beta_term3 = (2*d.in_units('nm')).as_type(np.float64)
+        
+        beta = h*gammah*(beta_term1 - beta_term2/beta_term3).as_type(np.float)
 
         #############
         #INTEGRATION#

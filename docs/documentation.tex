@@ -31,7 +31,7 @@ where $k=2 \pi/\lambda$ and $C = 1$ for $\sigma$-polarization and $\cos 2 \theta
 \beta = \frac{2 \pi}{d_h}\left(\sin \theta - \frac{\lambda}{2 d_h}\right) = h \left(\sin \theta - \frac{\lambda}{2 d_h}\right),
 \label{eq:beta}
 \end{equation}
-where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes.
+where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes. To avoid the possibility of catastrophic cancellation, the subtraction is performed explicitly with 64 bit floating point numbers.
 
 %THIS PARAGRAPH NEEDS A FIGURE
 The partial derivatives with respect to $s_0$ and $s_h$ can be written in Cartesian coordinates as
@@ -168,7 +168,7 @@ and thus
 Finally, since PyTTE assumes the top surface is at $z=0$, we need to shift the $z$-axis $z \rightarrow z + t/2 $
 \section{Crystallography and elastic constants}
 \subsection{Crystallographic vectors}
-For crystallographic data, \textsc{pyTTE} v. 0.2 relies on the internal library of \textsc{xraylib}\cite{Schoonjans_2011}. The direct primitive vectors $\mathbf{a}_1$, $\mathbf{a}_2$, and $\mathbf{a}_3$ given in a Cartesian system are calculated from the lattice parameters $a$,$b$,$c$, $\alpha$, $\beta$, and $\gamma$ as follows
+For crystallographic data, \textsc{pyTTE} relies on the internal library of \textsc{xraylib}\cite{Schoonjans_2011}. The direct primitive vectors $\mathbf{a}_1$, $\mathbf{a}_2$, and $\mathbf{a}_3$ given in a Cartesian system are calculated from the lattice parameters $a$,$b$,$c$, $\alpha$, $\beta$, and $\gamma$ as follows
 \begin{equation}
 \mathbf{a}_1 = a \left[\begin{matrix} 1 \\ 0 \\ 0 \end{matrix}\right] \qquad
 \mathbf{a}_2 = b \left[\begin{matrix} \cos \gamma \\ \sin \gamma \\ 0 \end{matrix}\right] \qquad
