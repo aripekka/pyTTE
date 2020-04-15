@@ -16,7 +16,7 @@ PyTTE (pronounced \emph{pie-tee-tee-ee}) is a Python package for solving X-ray d
 This document describes the theoretical basis behind PyTTE.
 
 \section{Takagi-Taupin equation}
-In the typical two-beam case, the Takagi-Taupin equations are can be written as
+In the typical two-beam case where the incident wave is written as $\mathbf{D}_0(\mathbf{r}) \exp(i \mathbf{k}_0 \cdot \mathbf{r})$ and the diffracted wave as $\mathbf{D}_h(\mathbf{r}) \exp(i \mathbf{k}_h \cdot \mathbf{r} - i \mathbf{h} \cdot \mathbf{u})$, the Takagi-Taupin equations are can be written as
 \begin{subnumcases}{}
 \frac{\partial D_0}{\partial s_0} =  i c_0 D_0 + i c_{\bar{h}} D_h \label{eq:TT_typicala} \\
 \frac{\partial D_h}{\partial s_h} =  i \left(c_0 + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h}  \right) D_h
@@ -54,6 +54,27 @@ In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of
 \frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
 \end{equation}
 by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\subsection{Susceptibilities and structure factors}
+In linear media, the susceptibility $\chi$ is related to the dielectric constant $\epsilon$ by $\epsilon = \epsilon_0 (1 + \chi)$ where $\epsilon_0$ is the vacuum permittivity  \cite{del_Coso_2004}. Since $\chi$ is small, the complex refractive index is thus $n = \sqrt{\epsilon} \approx 1 + \chi/2$. The connection between the refractive index and the atomic form factor is \cite{Chantler_1995}
+\begin{equation}
+n = 1 - \frac{r_0 \lambda^2}{2 \pi} \sum_j n_j f_j
+\end{equation}
+where $r_0$ is the classical electron radius, $n_j$ and $f_j$ are the number density and the form factor of atomic species $j$, respectively. For crystalline matter, the phase factor and the Debye-Waller factors are included in the sum
+\begin{equation}
+\chi(\mathbf{q}) =  - \frac{r_0 \lambda^2}{\pi V} \sum_{i} e^{i \mathbf{q} \cdot \mathbf{R}_i}  \sum_j f_j(\mathbf{q})  e^{i \mathbf{q} \cdot \mathbf{r}_j}  e^{-\tfrac{1}{2}q^2 \langle u_j^2 \rangle}
+\end{equation}
+where $V$ is the volume of the crystal. The first sum goes over all the lattice points $i$, and the second one the atoms in the unit cell. The Fourier coefficients of the series $\chi(\mathbf{r}) = \sum_{\mathbf{h}} \chi_{\mathbf{h}} e^{i\mathbf{h} \cdot \mathbf{r}}$ are thus
+\begin{equation}
+\chi_\mathbf{h} =  - \frac{r_0 \lambda^2}{\pi v}  F_{\mathbf{h}}
+\end{equation}
+where $v$ is the volume of the unit cell, and the crystal structure factor is
+\begin{equation}
+F_{\mathbf{h}} = \sum_j f_j(\mathbf{h})  e^{i \mathbf{h} \cdot \mathbf{r}_j}  e^{-\tfrac{1}{2}h^2 \langle u_j^2 \rangle}.
+\end{equation}
+
+\textsc{PyTTE} uses \texttt{Crystal\_F\_H\_StructureFactor} of \textsc{xraylib} to calculate the structure factors $F_h$. In this case the user given Debye-Waller factor is assumed to be $\exp(-\tfrac{1}{2}h^2 \langle u^2 \rangle)$ which is passed to calculation of $F_h$ and $F_{\bar{h}}$; the Debye-Waller factor is always 1 for $F_0$. Although not explicitely stated, \textsc{xraylib} apparently assumes the form of the Fourier expansion to be $\sum_{\mathbf{h}} \chi_{\mathbf{h}} e^{-i\mathbf{h} \cdot \mathbf{r}}$ due to which the structure factors are complex conjugated in \textsc{PyTTE} before calculating $\chi_{\mathbf{h}}$. According to the \textsc{xraylib} source code and the example files (e.g. \texttt{example/xrlexample1.c}) the input parameter \texttt{rel\_angle} is set to 1.
+
 
 \subsection{Scan vector and refraction correction}
 The scan vector, whether in the energy or angle domain, is given to \textsc{PyTTE} relative to the kinematical diffraction condition $\lambda = 2 d_h \sin \theta$, or equivalently $\beta = 0$. 
