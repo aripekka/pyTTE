@@ -529,15 +529,16 @@ class TTcrystal:
                'Reciprocal primitive vectors (before rotations, in 1/nm):\n' +\
                '    b1 = ' + np.array2string(10*self.reciprocal_primitives[:,0],precision=4,suppress_small=True)+'\n'+\
                '    b2 = ' + np.array2string(10*self.reciprocal_primitives[:,1],precision=4,suppress_small=True)+'\n'+\
-               '    b3 = ' + np.array2string(10*self.reciprocal_primitives[:,2],precision=4,suppress_small=True)+'\n'+\
-               'Crystal thickness: ' + str(self.thickness)+'\n\n'+\
+               '    b3 = ' + np.array2string(10*self.reciprocal_primitives[:,2],precision=4,suppress_small=True)+'\n\n'+\
                'Reflection: '+str(self.hkl)+'\n'+\
                'Asymmetry angle: ' + str(self.asymmetry)+'\n'+\
                'In-plane rotation angle: ' + str(self.in_plane_rotation)+'\n'+\
                'Crystal directions parallel to the Cartesian axes (after rotations):\n'+\
                '    x || ' + np.array2string(self.crystal_directions[:,0]/np.abs(self.crystal_directions[:,0]).max(),precision=4,suppress_small=True)+'\n'+\
                '    y || ' + np.array2string(self.crystal_directions[:,1]/np.abs(self.crystal_directions[:,1]).max(),precision=4,suppress_small=True)+'\n'+\
-               '    z || ' + np.array2string(self.crystal_directions[:,2]/np.abs(self.crystal_directions[:,2]).max(),precision=4,suppress_small=True)+'\n\n'+\
+               '    z || ' + np.array2string(self.crystal_directions[:,2]/np.abs(self.crystal_directions[:,2]).max(),precision=4,suppress_small=True)+'\n'+\
+               'Debye-Waller factor: ' + str(self.debye_waller)+'\n\n'+\
+               'Crystal thickness: ' + str(self.thickness)+'\n'+\
                'Meridional bending radius: ' + str(self.Rx) +'\n'+\
                'Sagittal bending radius: ' + str(self.Ry) +'\n\n'+\
                'Material elastic isotropy: ' + str(self.isotropy) +'\n' + elastic_str        
