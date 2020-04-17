@@ -334,10 +334,11 @@ class TTcrystal:
 
         if isinstance(in_plane_rotation, Quantity) and in_plane_rotation.type() == 'angle':
             self.in_plane_rotation = in_plane_rotation.copy()
-        elif len(in_plane_rotation) == 3:
+        elif type(in_plane_rotation) in [type([]),type((1,)),type(np.array([]))] and len(in_plane_rotation) == 3:
+                     
             #Check the list entry types
             for i in in_plane_rotation:
-                if not type(i) in [type(1),type(1.0)]:
+                if not np.isreal(i):
                     raise ValueError('In-plane rotation angle has to be a Quantity instance of type angle OR a list of floats size 3!')
 
             #calculate the given crystal direction in the direct space
