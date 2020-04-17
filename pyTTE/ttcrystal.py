@@ -385,7 +385,8 @@ class TTcrystal:
             debye_waller = A float or integer in the range [0,1]
         '''
 
-        if debye_waller >= 0 and debye_waller <= 1:
+        if not isinstance(debye_waller,Quantity) and np.array(debye_waller).size == 1 \
+        and np.real(debye_waller) and debye_waller >= 0 and debye_waller <= 1:
             self.debye_waller = debye_waller
         else:
             raise ValueError('Debye-Waller factor has to be a float or integer in range [0,1]!')
