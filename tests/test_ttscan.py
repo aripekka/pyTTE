@@ -78,3 +78,38 @@ def test_angle_scan():
                 assert False
             except ValueError as e:
                 assert True                
+                
+def test_optional_parameters():    
+            
+    #the first elements in the tuple are valid inputs and the second are  invalid 
+    opt_inputs = {
+                  'solver' : (['zvode_bdf'], [598, Quantity(-5,'keV'),'asds',None]),
+                  'integration_step' : ([Quantity(1,'um'), Quantity(-1,'mm')], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1]), None, Quantity(np.array([1,2,3]),'keV')]),
+                  'start_depth' : ([Quantity(1,'um'), Quantity(-1,'mm'), None], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1]), Quantity(np.array([1,2,3]),'keV')]),
+                 }
+    
+    
+    #Elastic constants E, nu and S are tested in a separate function
+    
+    for k in opt_inputs:
+        for i in range(1, len(opt_inputs[k][0])):
+            kwargs_valid = {'constant' : Quantity(8,'keV'), 'scan' : Quantity(np.linspace(-100,100,100),'urad'), 'polarization' : 'pi'}
+            kwargs_valid[k] = opt_inputs[k][0][i]
+
+            try:
+                TTscan(**kwargs_valid)
+                assert True
+            except ValueError as e:
+                assert False
+
+        for i in range(1, len(opt_inputs[k][1])):
+            kwargs_invalid = {'constant' : Quantity(8,'keV'), 'scan' : Quantity(np.linspace(-100,100,100),'urad'), 'polarization' : 'pi'}
+            kwargs_invalid[k] = opt_inputs[k][1][i]
+            print(k)
+            print(opt_inputs[k][1][i])
+
+            try:
+                TTscan(**kwargs_invalid)
+                assert False
+            except ValueError as e:
+                assert True    
