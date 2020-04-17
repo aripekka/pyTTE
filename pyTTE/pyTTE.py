@@ -18,20 +18,53 @@ import multiprocess
 
 class TakagiTaupin:
 
+    ##############################
+    # Methods for initialization #
+    ##############################    
+
     def __init__(self, TTcrystal_object = None, TTscan_object = None):
+        '''
+        Initialize the TakagiTaupin instance.
+
+
+        Input:
+            TTcrystal_object = An existing TTcrystal instance for crystal 
+                               parameters or a path to a file where they are 
+                               defined. For any other types the crystal 
+                               parameters are not set.
+            
+            TTscan_object    = An existing TTscan instance for scan parameters 
+                               or a path to a file where they are defined.
+                               For any other types the scan parameters are not set.
+        '''
+
         self.crystal_object = None
-        self.scan_object = None
-        self.solution = None
+        self.scan_object    = None
+        self.solution       = None
 
         self.set_crystal(TTcrystal_object)
         self.set_scan(TTscan_object)
 
     def set_crystal(self, TTcrystal_object):
+        '''
+        Sets the crystal parameters for the scan instance. Any existing solutions
+        are cleared.
+
+        Input:
+            TTcrystal_object = An existing TTcrystal instance for crystal 
+                               parameters or a path to a file where they are 
+                               defined. For any other types the crystal 
+                               parameters are not set and the solution is not
+                               cleared.
+        '''
+
         if isinstance(TTcrystal_object, TTcrystal): 
             self.crystal_object = TTcrystal_object
+            self.solution       = None
         elif type(TTcrystal_object) == str:
             try:
                 self.crystal_object = TTcrystal(TTcrystal_object)
+                self.solution       = None
             except Exception as e:
                 print(e)
                 print('Error initializing TTcrystal from file! Crystal not set.')
@@ -39,16 +72,64 @@ class TakagiTaupin:
             print('ERROR! Not an instance of TTcrystal or None! Crystal not set.')
 
     def set_scan(self, TTscan_object):
+        '''
+        Sets the crystal parameters for the scan instance. Any existing solutions
+        are cleared.
+
+        Input:
+            TTscan_object    = An existing TTscan instance for scan parameters 
+                               or a path to a file where they are defined. For 
+                               any other types the scan parameters are not set
+                               and the solution is not cleared.
+        '''
+
         if isinstance(TTscan_object, TTscan):
             self.scan_object = TTscan_object
+            self.solution    = None
         elif type(TTscan_object) == str:
             try:
                 self.scan_object = TTscan(TTscan_object)
+                self.solution    = None
             except Exception as e:
                 print(e)
                 print('Error initializing TTscan from file! Scan not set.')
         else:
             print('ERROR! Not an instance of TTscan or None! Scan not set.')
+
+
+    ####################################
+    # Auxiliary methods for TT solving #
+    ####################################    
+
+    @staticmethod
+    def calculate_structure_factors(crystal, hkl, energy, debye_waller):
+        '''
+        Calculates the structure factors F_0 F_h and F_bar{h}.
+        
+        Input:
+            crystal = a dictionary returned by xraylib's Crystal_GetCrystal()
+            hkl = 3 element list containing the Miller indeces of the reflection
+            energy = Quantity instance of type energy. May be a single number or an array
+            debye_waller = The Debye-Waller factor
+        '''
+
+        energy_in_keV = energy.in_units('keV')
+        
+        #preserve the original shape and reshape energy to 1d array
+        orig_shape = energy_in_keV.shape
+        energy_in_keV = energy_in_keV.reshape(-1)
+
+        F0 = np.zeros(energy_in_keV.shape, dtype=np.complex)
+        Fh = np.zeros(energy_in_keV.shape, dtype=np.complex)
+        Fb = np.zeros(energy_in_keV.shape, dtype=np.complex)        
+
+        for i in range(energy_in_keV.size):    
+            F0[i] = xraylib.Crystal_F_H_StructureFactor(crystal, energy_in_keV[i], 0, 0, 0, 1.0, 1.0)
+            Fh[i] = xraylib.Crystal_F_H_StructureFactor(crystal, energy_in_keV[i],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
+            Fb[i] = xraylib.Crystal_F_H_StructureFactor(crystal, energy_in_keV[i], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+
+        return F0.reshape(orig_shape), Fh.reshape(orig_shape), Fb.reshape(orig_shape)
+
 
     def run(self):
         #Check that the required scan parameters are in place
@@ -92,11 +173,13 @@ class TakagiTaupin:
         #set the scan vector
         if self.scan_object.scan[0] == 'automatic':
 
-            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, debye_waller, 1.0)
-            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
-            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+            F0, Fh, Fb = TakagiTaupin.calculate_structure_factors(crystal, 
+                                                                  hkl, 
+                                                                  energy_bragg, 
+                                                                  debye_waller)
 
-            cte = -(r_e * (hc/energy_bragg)**2/(np.pi * V)).in_units('1') #conversion factor from crystal structure factor to susceptibility
+            #conversion factor from crystal structure factor to susceptibility
+            cte = -(r_e * (hc/energy_bragg)**2/(np.pi * V)).in_units('1') 
 
             chi0 = np.conj(cte*F0)
             chih = np.conj(cte*Fh)
@@ -223,22 +306,16 @@ class TakagiTaupin:
         print('Exit angle      : ', theta_bragg-phi)
         print('')
 
+
         #Compute susceptibilities
-        cte = -(r_e * wavelength*wavelength/(np.pi * V)).in_units('1') #conversion factor from crystal structure factor to susceptibility
+        
+        F0, Fh, Fb = TakagiTaupin.calculate_structure_factors(crystal, 
+                                                              hkl, 
+                                                              energy, 
+                                                              debye_waller)
 
-        if self.scan_object.scantype == 'energy':
-            F0 = np.zeros(scan_shape,dtype=np.complex)
-            Fh = np.zeros(scan_shape,dtype=np.complex)
-            Fb = np.zeros(scan_shape,dtype=np.complex)
-
-            for ii in range(scan_steps):    
-                F0[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], 0, 0, 0, 1.0, 1.0)
-                Fh[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii],  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
-                Fb[ii] = xraylib.Crystal_F_H_StructureFactor(crystal, energy.in_units('keV')[ii], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
-        else:
-            F0 = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), 0, 0, 0, 1.0, 1.0)
-            Fh = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'),  hkl[0],  hkl[1],  hkl[2], debye_waller, 1.0)
-            Fb = xraylib.Crystal_F_H_StructureFactor(crystal, energy_bragg.in_units('keV'), -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
+        #conversion factor from crystal structure factor to susceptibility
+        cte = -(r_e * (hc/energy_bragg)**2/(np.pi * V)).in_units('1') 
 
         chi0 = np.conj(cte*F0)
         chih = np.conj(cte*Fh)
@@ -271,13 +348,13 @@ class TakagiTaupin:
         gb = 0.5*k*C*chib*gamma0*np.ones(scan_shape)
 
         #Deviation from the kinematical Bragg condition for unstrained crystal
-        #To avoid catastrophic cancellation, the terms in the substraction are
+        #To avoid catastrophic cancellation, the terms in the subtraction are
         #explicitly casted to 64 bit floats.
-        beta_term1 = np.sin(theta.in_units('rad')).as_type(np.float64)
-        beta_term2 = wavelength.in_units('nm').as_type(np.float64)
-        beta_term3 = (2*d.in_units('nm')).as_type(np.float64)
+        beta_term1 = np.sin(theta.in_units('rad')).astype(np.float64)
+        beta_term2 = wavelength.in_units('nm').astype(np.float64)
+        beta_term3 = (2*d.in_units('nm')).astype(np.float64)
         
-        beta = h*gammah*(beta_term1 - beta_term2/beta_term3).as_type(np.float)
+        beta = h*gammah*(beta_term1 - beta_term2/beta_term3).astype(np.float)
 
         #############
         #INTEGRATION#
