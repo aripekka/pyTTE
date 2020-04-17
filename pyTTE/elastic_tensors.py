@@ -1,7 +1,5 @@
 from __future__ import division, print_function
 import numpy as np
-import xraylib
-from . import rotation_matrix as Q
 
 #Elastic constants for single crystals in units 10^11 Pa
 #Source: CRC Handbook of Chemistry and Physics, 82nd edition
