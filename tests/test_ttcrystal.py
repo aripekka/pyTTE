@@ -82,7 +82,7 @@ def test_init_optional_inputs():
             try:
                 TTcrystal(**kwargs_valid)
                 assert True
-            except KeyError as e:
+            except ValueError as e:
                 assert False
 
         for i in range(1, len(opt_inputs[k][1])):
