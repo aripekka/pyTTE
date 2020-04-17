@@ -1,0 +1,6 @@
+constant 12 keV
+scan -50 50 100 arcsec
+polarization sigma
+solver zvode_bdf
+integration_step 1 nm
+start_depth -0.1 mm
