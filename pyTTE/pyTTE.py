@@ -45,6 +45,8 @@ class TakagiTaupin:
         self.set_crystal(TTcrystal_object)
         self.set_scan(TTscan_object)
 
+
+
     def set_crystal(self, TTcrystal_object):
         '''
         Sets the crystal parameters for the scan instance. Any existing solutions
@@ -70,6 +72,8 @@ class TakagiTaupin:
                 print('Error initializing TTcrystal from file! Crystal not set.')
         else:
             print('ERROR! Not an instance of TTcrystal or None! Crystal not set.')
+
+
 
     def set_scan(self, TTscan_object):
         '''
@@ -129,6 +133,7 @@ class TakagiTaupin:
             Fb[i] = xraylib.Crystal_F_H_StructureFactor(crystal, energy_in_keV[i], -hkl[0], -hkl[1], -hkl[2], debye_waller, 1.0)
 
         return F0.reshape(orig_shape), Fh.reshape(orig_shape), Fb.reshape(orig_shape)
+
 
 
     def run(self):
@@ -240,8 +245,8 @@ class TakagiTaupin:
                 energy_max = beta_max*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
 
                 print('Using automatically determined scan limits:')
-                print('E min:', energy_min)
-                print('E max:', energy_max)
+                print('E min:', energy_min.in_units('meV'),'meV')
+                print('E max:', energy_max.in_units('meV'),'meV')
                 print('')
 
                 scan = Quantity(np.linspace(energy_min.in_units('meV'),energy_max.in_units('meV'),self.scan_object.scan[1]),'meV')
@@ -252,8 +257,8 @@ class TakagiTaupin:
                 theta_max  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')),'rad')-theta_bragg
 
                 print('Using automatically determined scan limits:')
-                print('Theta min:', theta_min)
-                print('Theta max:', theta_max)
+                print('Theta min:', theta_min.in_units('urad'),'urad')
+                print('Theta max:', theta_max.in_units('urad'),'urad')
                 print('')
 
                 scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),self.scan_object.scan[1]),'urad')
