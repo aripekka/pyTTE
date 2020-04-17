@@ -100,10 +100,20 @@ class TTscan:
             raise ValueError('scan has to be either a Quantity of type energy (for angle constant) or angle (for energy constant) or a non-negative integer!')
 
     def __str__(self):
-        #TODO: Improve output presentation
-        return 'Scan type: ' + self.scantype + '\n' +\
-               'Scan constant: ' + str(self.constant) +'\n' +\
-               'Polarization: ' + self.polarization  +'\n' +\
-               'Scan points: ' + str(self.scan[0])  +'\n'
+        
+        if self.scan[0] == 'manual':
+            N_points = self.scan[1].value.size
+            limit_str = 'manual from ' + str(self.scan[1].value.min()) \
+                        + ' to ' + str(self.scan[1].value.max()) + ' ' \
+                        + Quantity._unit2str(self.scan[1].unit)
+        else:
+            N_points = self.scan[1]
+            limit_str = 'automatic'
+            
+        return 'Scan type     : ' + self.scantype + '\n' +\
+               'Scan constant : ' + str(self.constant) +'\n' +\
+               'Polarization  : ' + self.polarization  +'\n' +\
+               'Scan points   : ' + str(N_points)  +'\n' +\
+               'Scan range    : ' + limit_str   +'\n'
 
 
