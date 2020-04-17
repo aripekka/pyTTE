@@ -166,6 +166,9 @@ class TTscan:
                'Scan constant : ' + str(self.constant) +'\n' +\
                'Polarization  : ' + self.polarization  +'\n' +\
                'Scan points   : ' + str(N_points)  +'\n' +\
-               'Scan range    : ' + limit_str   +'\n'
+               'Scan range    : ' + limit_str   +'\n\n'+\
+               'Integrator                 : ' + self.solver + '\n'+\
+               '(Minimum) integration step : ' + str(self.integration_step)+'\n'\
+               'Alternative starting depth : ' + str(self.start_depth)+'\n'    
 
 
