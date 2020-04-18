@@ -458,12 +458,20 @@ class TakagiTaupin:
             lock.release()            
 
             if geometry == 'bragg':
-                r.set_initial_value(0,-thickness)
+                if not self.scan_object.start_depth == None:
+                    start_depth = self.scan_object.start_depth.in_units('um')
+                    if start_depth > 0 or start_depth < -thickness:
+                        print('Warning! The given starting depth ' + str(start_depth) + 'um is outside the crystal!')                    
+                    r.set_initial_value(0,start_depth)
+                else:
+                    r.set_initial_value(0,-thickness)
                 res=r.integrate(0)     
                 reflectivity = np.abs(res[0])**2*gamma0[step]/gammah[step] #gamma-part takes into account beam footprints
                 transmission = -1 #Not implemented yet
                 return reflectivity, transmission
             else:
+                if not self.scan_object.start_depth == None:
+                    print('Warning! The alternative start depth is negleted in the Laue case.')
                 r.set_initial_value([0,1],0)
                 res=r.integrate(-thickness)
                 diffraction = np.abs(res[0]*res[1])**2
