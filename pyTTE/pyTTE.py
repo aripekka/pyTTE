@@ -304,11 +304,11 @@ class TakagiTaupin:
 
         #DEBUG
         print('Asymmetry angle : ', phi)
-        print('Wavelength      : ', hc/energy_bragg)
-        print('Energy          : ', energy_bragg.in_units('keV'), ' keV ')       
-        print('Bragg angle     : ', theta_bragg)
-        print('Incidence angle : ', theta_bragg+phi)
-        print('Exit angle      : ', theta_bragg-phi)
+        print('Wavelength      : ', (hc/energy_bragg).in_units('nm'),'nm')
+        print('Energy          : ', energy_bragg.in_units('keV'), 'keV')       
+        print('Bragg angle     : ', theta_bragg.in_units('deg'),'deg')
+        print('Incidence angle : ', (theta_bragg+phi).in_units('deg'),'deg')
+        print('Exit angle      : ', (theta_bragg-phi).in_units('deg'),'deg')
         print('')
 
 
