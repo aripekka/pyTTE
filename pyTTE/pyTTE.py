@@ -448,7 +448,9 @@ class TakagiTaupin:
 
                 r=ode(TTE,TTE_jac)
 
-            r.set_integrator('zvode',method='bdf',with_jacobian=True, min_step=1e-12,max_step=thickness,nsteps=50000)
+            r.set_integrator('zvode',method='bdf',with_jacobian=True, 
+                             min_step=self.scan_object.integration_step.in_units('um'),
+                             max_step=thickness,nsteps=50000)
         
             #Update the solving process
             lock.acquire()
