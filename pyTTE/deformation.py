@@ -32,6 +32,109 @@ def isotropic_plate(Rx,Ry,nu,thickness):
 
     return jacobian
 
+def anisotropic_plate_fixed_torques(R1,R2,S,thickness):
+    '''
+    Creates a function for computing the Jacobian of the displacement field 
+    for an anisotropic plate with fixed torques.
+    
+    Parameters
+    ----------
+    
+    R1 : float, 'inf' or None
+        The meridional bending radius due to torques (in the same units as R1 
+        and thickness). Use 'inf' if the direction is not curved. None sets the 
+        corresponding torque to zero and R1 is calculated as an anticlastic
+        reaction to the other torque.
+        
+    R2 : float, 'inf' or None
+        The sagittal bending radius due to torques (in the same units as R1 
+        and thickness). Use 'inf' if the direction is not curved. None sets the 
+        corresponding torque to zero and R1 is calculated as an anticlastic
+        reaction to the other torque.
+        
+    S : 6x6 Numpy array of floats
+        The compliance matrix in the Voigt notation. Units are not important.
+        
+    thickness : float
+        The thickness of the crystal (in the same units as R1 and R2)
+
+
+    Returns
+    -------    
+        
+    jacobian : function
+        Returns the partial derivatives of the displacement vector u as a 
+        function of coordinates (x,z). The length scale is determined by the
+        units of R1, R2 and thickness.
+
+    R1 : float
+        The meridional bending radius due to torques (in the units defined by 
+        the input). Calculated by the function if due to anticlastic bending.
+    
+    R2 : float
+        The sagittal bending radius due to torques (in the units defined by the
+        input). Calculated by the function if due to anticlastic bending.
+        
+    '''
+
+    S = np.array(S)
+
+    if R1 is None:             
+        m1 = 0 #no torque about y-axis
+        
+        if R2 is None or isinf(float(R2)):
+            #If both bending radii are set to None, or R2 = inf when m1 = 0, it
+            #it implies that there no torques acting on the wafer  
+            m2 = 0
+            R1 = 'inf'
+            R2 = 'inf'
+        else:
+            m2 = -1.0/(S[1,1] * R2)            
+            R1 = -1.0/(S[0,1] * m2) #anticlastic reaction
+            
+    elif R2 is None:        
+        m2 = 0 #no torque about x-axis     
+        if isinf(float(R1)):
+            m1 = 0
+            R1 = 'inf'
+            R2 = 'inf'
+        else:   
+            m1 = -1.0/(S[0,0] * R1) 
+            R2 = -1.0/(S[1,0] * m1) #anticlastic reaction
+    else:
+        if isinf(float(R1)):
+            R1 = 'inf' #for output
+            invR1 = 0
+        else:
+            invR1 = 1/R1
+
+        if isinf(float(R2)):
+            R2 = 'inf' #for output
+            invR2 = 0
+        else:
+            invR2 = 1/R2
+
+        m_divider = S[1,1]*S[0,0] - S[0,1]*S[0,1]
+        m1 = (S[0,1]*invR2 - S[1,1]*invR1)/m_divider
+        m2 = (S[0,1]*invR1 - S[0,0]*invR2)/m_divider
+    
+    #Coefficients for the Jacobian
+    coef1 = Sp[0,0]*m1 + Sp[0,1]*m2
+    coef2 = Sp[4,0]*m1 + Sp[4,1]*m2
+    coef3 = Sp[2,0]*m1 + Sp[2,1]*m2
+    
+    def jacobian(x,z):
+        ux_x = coef1*(z+0.5*thickness)
+        ux_z = coef1*x + coef2*(z+0.5*thickness)
+
+        uz_x = -coef1*x
+        uz_z = coef3*(z+0.5*thickness)
+
+        return [[ux_x,ux_z],[uz_x,uz_z]]
+
+    return jacobian, R1, R2
+
+
 def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
     '''
     Creates a function for computing the Jacobian of the displacement field 
@@ -40,13 +143,13 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
     Parameters
     ----------
     
-    R1 : float
+    R1 : float or 'inf'
         The meridional bending radius (in the same units as R2 and thickness).
-        Use 'inf' if the direction is unbent.
+        Use 'inf' if the direction is not curved.
         
-    R2 : float
+    R2 : float or 'inf'
         The sagittal bending radius (in the same units as R1 and thickness)
-        Use 'inf' if the direction is unbent.
+        Use 'inf' if the direction is not curved.
         
     S : 6x6 Numpy array of floats
         The compliance matrix in the Voigt notation. Units are not important.
@@ -77,7 +180,7 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
     else:
         invR2 = 1.0/R2
 
-    #calculate the rotation angle alpha
+    #Calculate the rotation angle alpha
     S = array(S)
     meps = finfo(type(S[0][0])).eps
     
@@ -107,7 +210,7 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
        - (Sp[0,1]+Sp[0,0])*(invR2 - invR1)*cos(2*alpha)
     my = my / m_divider  
 
-    #Coeffiecients for the Jacobian
+    #Coefficients for the Jacobian
     coef1 = Sp[2,0]*mx + Sp[2,1]*my
     coef2 = (Sp[4,0]*mx + Sp[4,1]*my)*cos(alpha) 
           - (Sp[3,0]*mx + Sp[3,1]*my)*sin(alpha)
