@@ -135,12 +135,12 @@ Again we write the partial derivatives in terms of $x$ and $z$. In this case, ho
 \end{equation}
 where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
 
-\subsection{Anisotropic plate}
-According to \cite{Sanchez_del_Rio_2015}, the components of the displacement field for an anisotropic plate bent by two (scaled) torques $m_x$ and $m_y$ are
+\subsection{Anisotropic plate, bending due to applied torques}
+According to \cite{Chukhovskii_1994}, the components of the displacement field for an anisotropic plate bent by two (scaled) torques $m_1$ and $m_2$ acting about $y$- and $x$-axes, respectively, are
 \begin{align}
-u_x &= (S_{11} m_x + S_{12} m_y) x z + (S_{51} m_x + S_{52} m_y)\frac{z^2}{2} + (S_{61} m_x +S_{62} m_y) \frac{y z}{2} \\
-u_y &= (S_{21} m_x + S_{22} m_y) y z + (S_{41} m_x + S_{42} m_y)\frac{z^2}{2} + (S_{61} m_x +S_{62} m_y) \frac{x z}{2} \\
-u_z &= -(S_{11} m_x + S_{12} m_y)\frac{x^2}{2} -(S_{21} m_x + S_{22} m_y)\frac{y^2}{2} -(S_{61} m_x +S_{62} m_y) \frac{x y}{2} +(S_{31} m_x + S_{32} m_y)\frac{z^2}{2},
+u_x &= (S_{11} m_1 + S_{12} m_2) x z + (S_{51} m_1 + S_{52} m_2)\frac{z^2}{2} + (S_{61} m_1 +S_{62} m_2) \frac{y z}{2} \\
+u_y &= (S_{21} m_1 + S_{22} m_2) y z + (S_{41} m_1 + S_{42} m_2)\frac{z^2}{2} + (S_{61} m_1 +S_{62} m_2) \frac{x z}{2} \\
+u_z &= -(S_{11} m_1 + S_{12} m_2)\frac{x^2}{2} -(S_{21} m_1 + S_{22} m_2)\frac{y^2}{2} -(S_{61} m_1 +S_{62} m_2) \frac{x y}{2} +(S_{31} m_1 + S_{32} m_2)\frac{z^2}{2},
 \end{align} 
 where $S_{ij}$ are the components of the compliance matrix. Thus we find the partial derivatives:
 \begin{align}
@@ -150,19 +150,66 @@ where $S_{ij}$ are the components of the compliance matrix. Thus we find the par
 \frac{\partial u_z}{\partial x} &= -(S_{11} m_x + S_{12} m_y) x -(S_{61} m_x + S_{62} m_y) \frac{y}{2} \\
 \frac{\partial u_z}{\partial z} &= (S_{31} m_x + S_{32} m_y) z
 \end{align} 
-The torques are related to the bending radii $R_i$ by\footnote{In this work the signs of $R_i$ is the opposite to that of \cite{Sanchez_del_Rio_2015}}
+The torques are related to the bending radii $R_i$ by\footnote{In this work the signs of $R_i$ is the opposite to that of \cite{Chukhovskii_1994}}
 \begin{equation}
-\frac{1}{R_x} = -S_{11} m_x - S_{12} m_y, \qquad
-\frac{1}{R_y} = -S_{21} m_x - S_{22} m_y.
+\frac{1}{R_1} = -S_{11} m_1 - S_{12} m_2, \qquad
+\frac{1}{R_2} = -S_{21} m_1 - S_{22} m_2.
 \end{equation}
 Thus
 \begin{equation}
-m_x = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{12}}{R_y}-\frac{S_{22}}{R_x} \right), \qquad
-m_y = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{21}}{R_x}-\frac{S_{11}}{R_y} \right).
+m_1 = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{12}}{R_2}-\frac{S_{22}}{R_1} \right), \qquad
+m_2 = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{21}}{R_1}-\frac{S_{11}}{R_2} \right).
 \label{eq:ms}
 \end{equation}
+However, it should be noted $R_1$ and $R_2$ due to $m_1$ and $m_2$ may not be the main axes of curvature of now toroidally bent crystal, as the non-diagonal components $S_{61}$ and $S_{62}$ may cause the rotation with respect to the torques. Therefore the equations presented here apply to the case where the crystal wafer is allowed to adopt the shape freely as an reaction to the orthogonal torques \emph{e.g.} when a thin slab is bent by its edges.
+
+This deformation is implemented as \texttt{deformation.anisotropic\_plate\_fixed\_torques}. As an input, the user gives the bending radii $R_{1,2}$ from which the torques are calculated using Eq.~$\eqref{eq:ms}$. User may also give only the other of the $R_i$:s, when it is assumed that the torque acting in the orthogonal direction is zero, in which case the crystal adopts the corresponding $R_j, j \neq i$ via the anticlastic bending.
+
+\subsection{Anisotropic plate, fixed toroidal shape}
+When the shape of the bending is fixed \emph{e.g.} by bonding the crystal on a substrate, more complicated procedure than described before is needed. In the case of toroidal bending with the meridional bending radius $R_1$ (in the $x$-direction) and the sagittal radius $R_2$ (in the $y$-direction) are set the main axes of curvature, the relevant partial derivatives of $\mathbf{u}$, are \cite{Honkanen_2020}
+\begin{align}
+\frac{\partial u_x}{\partial x} &= - \frac{z}{R_1} \qquad
+\frac{\partial u_z}{\partial x} = \frac{x}{R_1} \qquad
+\frac{\partial u_z}{\partial z} = \left(S_{31}' \mu_x + S_{32}' \mu_y \right) z \nonumber \\
+\frac{\partial u_x}{\partial z} &= -\frac{x}{R_1} + \left[ 
+\left(S_{51}' \mu_x + S_{52}' \mu_y \right) \cos \alpha
+- \left(S_{41}' \mu_x + S_{42}' \mu_y \right) \sin \alpha
+\right]
+\end{align} 
+where
+\begin{align}
+\mu_x = \frac{(S_{12}' - S_{22}')(R_1 + R_2) + (S_{12}' + S_{22}')(R_1 - R_2)\cos 2 \alpha}{2(S_{11}'S_{22}'  - S_{12}'S_{12}')R_1 R_2}\\
+\mu_y = \frac{(S_{12}' - S_{11}')(R_1 + R_2) - (S_{12}' + S_{11}')(R_1 - R_2)\cos 2 \alpha}{2(S_{11}'S_{22}'  - S_{12}'S_{12}')R_1 R_2}.
+\end{align}
+$S_{ij}'$ are related to the input compliance matrix $S_{ij}$ by a rotation $\alpha$ in the $xy$-plane given by
+\begin{equation}
+\alpha = \frac{1}{2} \arctan \left[ \frac{D_\alpha(R_1 + R_2) - B_\alpha (R_1 - R_2)}{ A_\alpha (R_1 - R_2) - C_\alpha (R_1 + R_2) } \right] + \frac{\pi n}{2}
+\end{equation}
+where
+\begin{align}
+A_\alpha &= S_{66} (S_{11} + S_{22} + 2 S_{12}) - (S_{61} + S_{62})^2 \\
+B_\alpha &=  2\left[S_{62} (S_{12} + S_{11}) - S_{61} (S_{12} + S_{22}) \right]   \\
+C_\alpha &= S_{66} (S_{22} - S_{11}) + S_{61}^2 - S_{62}^2  \\
+D_\alpha &= 2\left[S_{62} (S_{12} - S_{11}) + S_{61} (S_{12} - S_{22}) \right].
+\end{align}
+The rotation is performed to the compliance tensor by
+\begin{equation}
+s'_{ijkl} = \sum_{p,q,r,s} Q_{ip}Q_{jq}Q_{kr}Q_{ls} s_{pqrs} 
+\end{equation}
+where $Q$ is 
+\begin{equation}
+Q = \left[\begin{matrix}
+\cos \alpha & -\sin \alpha & 0 \\
+\sin \alpha & \cos \alpha & 0 \\
+0 & 0 & 1
+\end{matrix}\right].
+\end{equation}
+The Voigt notation\footnote{From \cite{Honkanen_2020}: "In the Voigt notation, a pair of indices $ij$ is replaced with a single index $m$ as follows: $11 \rightarrow 1$; $22 \rightarrow 2$; $33 \rightarrow 3$; $23,32 \rightarrow 4$; $13, 31 \rightarrow 5$ and $12, 21 \rightarrow 6$. The compliance matrix $S$ in the Voigt notation is given in terms of the compliance tensor $s$ so that $S_{mn} = (2 - \delta_{ij})(2 - \delta_{kl})s_{ijkl}$, where $ij$ and $kl$ are any pairs of indices corresponding to $m$ and $n$, respectively, and $\delta$ is the Kronecker delta."} is used to connect the compliance tensors and matrices.
+
+The fixed shape bending is implemented as \texttt{deformation.anisotropic\_plate\_fixed\_shape}.
+
 \subsection{Isotropic plate}
-The general anisotropic equations simplify considerably when assuming the plate to be isotropic. The isotropic compliance matrix is given by
+The general anisotropic equations for fixed torques and fixed shape simplify to the same solution when the plate is assumed to be isotropic. The isotropic compliance matrix is given by
 \begin{equation}
 S = \frac{1}{E}\left[\begin{matrix}
 1 & -\nu & -\nu & 0 & 0 & 0 \\
