@@ -18,7 +18,7 @@ class TTscan:
         filepath : str
             Path to the file with crystal parameters
 
-        ALTERNATIVELY
+        *OR*
 
         constant : Quantity of type energy or angle
             Determines value of the incident photon energy or the fixed incidence 
