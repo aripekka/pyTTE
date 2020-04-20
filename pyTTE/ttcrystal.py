@@ -555,22 +555,26 @@ class TTcrystal:
             self.displacement_jacobian = self.deformation_model[1]
         elif self.Rx.value == float('inf') and self.Ry.value == float('inf'):
             self.displacement_jacobian = None
-        elif self.deformation_model[0] == 'anisotropic':
-            if self.deformation_model[1] == 'fixed_shape': 
-                self.displacement_jacobian = anisotropic_plate_fixed_shape(self.Rx.in_units(self._jacobian_length_unit),
-                                                                           self.Ry.in_units(self._jacobian_length_unit),
-                                                                           self.S.in_units('GPa^-1'),
-                                                                           self.thickness.in_units(self._jacobian_length_unit))
+        else:
+            if self.Rx is not None:
+                Rx = self.Rx.in_units(self._jacobian_length_unit)
             else:
-                self.displacement_jacobian = anisotropic_plate_fixed_torques(self.Rx.in_units(self._jacobian_length_unit),
-                                                                             self.Ry.in_units(self._jacobian_length_unit),
-                                                                             self.S.in_units('GPa^-1'),
-                                                                             self.thickness.in_units(self._jacobian_length_unit))[0]
-        else: 
-            self.displacement_jacobian = isotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
-                                                         self.Ry.in_units(self._jacobian_length_unit),
-                                                         self.nu,
-                                                         self.thickness.in_units(self._jacobian_length_unit))[0]
+                Rx = None
+            if self.Ry is not None:
+                Ry = self.Ry.in_units(self._jacobian_length_unit)
+            else:
+                Ry = None
+
+            if self.deformation_model[0] == 'anisotropic':
+                if self.deformation_model[1] == 'fixed_shape': 
+                    self.displacement_jacobian = anisotropic_plate_fixed_shape(Rx, Ry, self.S.in_units('GPa^-1'),
+                                                                               self.thickness.in_units(self._jacobian_length_unit))
+                else:
+                    self.displacement_jacobian = anisotropic_plate_fixed_torques(Rx, Ry, self.S.in_units('GPa^-1'),
+                                                                                 self.thickness.in_units(self._jacobian_length_unit))[0]
+            else: 
+                self.displacement_jacobian = isotropic_plate(Rx, Ry, self.nu,
+                                                             self.thickness.in_units(self._jacobian_length_unit))[0]
 
     def __str__(self):
         #TODO: Improve output presentation
