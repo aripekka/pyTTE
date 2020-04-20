@@ -144,11 +144,11 @@ u_z &= -(S_{11} m_1 + S_{12} m_2)\frac{x^2}{2} -(S_{21} m_1 + S_{22} m_2)\frac{y
 \end{align} 
 where $S_{ij}$ are the components of the compliance matrix. Thus we find the partial derivatives:
 \begin{align}
-\frac{\partial u_x}{\partial x} &= (S_{11} m_x + S_{12} m_y) z \\
-\frac{\partial u_x}{\partial z} &= (S_{11} m_x + S_{12} m_y) x + (S_{51} m_x + S_{52} m_y) z 
-+ (S_{61} m_x + S_{62} m_y) \frac{y}{2}\\
-\frac{\partial u_z}{\partial x} &= -(S_{11} m_x + S_{12} m_y) x -(S_{61} m_x + S_{62} m_y) \frac{y}{2} \\
-\frac{\partial u_z}{\partial z} &= (S_{31} m_x + S_{32} m_y) z
+\frac{\partial u_x}{\partial x} &= (S_{11} m_1 + S_{12} m_2) z \\
+\frac{\partial u_x}{\partial z} &= (S_{11} m_1 + S_{12} m_2) x + (S_{51} m_1 + S_{52} m_2) z 
++ (S_{61} m_1 + S_{62} m_2) \frac{y}{2}\\
+\frac{\partial u_z}{\partial x} &= -(S_{11} m_1 + S_{12} m_2) x -(S_{61} m_1 + S_{62} m_2) \frac{y}{2} \\
+\frac{\partial u_z}{\partial z} &= (S_{31} m_1 + S_{32} m_2) z
 \end{align} 
 The torques are related to the bending radii $R_i$ by\footnote{In this work the signs of $R_i$ is the opposite to that of \cite{Chukhovskii_1994}}
 \begin{equation}
