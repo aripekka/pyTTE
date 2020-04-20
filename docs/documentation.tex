@@ -183,7 +183,7 @@ where
 \end{align}
 $S_{ij}'$ are related to the input compliance matrix $S_{ij}$ by a rotation $\alpha$ in the $xy$-plane given by
 \begin{equation}
-\alpha = \frac{1}{2} \arctan \left[ \frac{D_\alpha(R_1 + R_2) - B_\alpha (R_1 - R_2)}{ A_\alpha (R_1 - R_2) - C_\alpha (R_1 + R_2) } \right] + \frac{\pi n}{2}
+\alpha = \frac{1}{2} \arctan \left[ \frac{D_\alpha(R_1 + R_2) - B_\alpha (R_1 - R_2)}{ A_\alpha (R_1 - R_2) - C_\alpha (R_1 + R_2) } \right]
 \end{equation}
 where
 \begin{align}
@@ -192,6 +192,8 @@ B_\alpha &=  2\left[S_{62} (S_{12} + S_{11}) - S_{61} (S_{12} + S_{22}) \right] 
 C_\alpha &= S_{66} (S_{22} - S_{11}) + S_{61}^2 - S_{62}^2  \\
 D_\alpha &= 2\left[S_{62} (S_{12} - S_{11}) + S_{61} (S_{12} - S_{22}) \right].
 \end{align}
+\emph{unless} $S_{61} = S_{62} = 0$, $S_{11} = S_{22}$, and $S_{11} + S_{22} - 2 S_{12} - S_{66} = 0$ when $\alpha = 0$.
+
 The rotation is performed to the compliance tensor by
 \begin{equation}
 s'_{ijkl} = \sum_{p,q,r,s} Q_{ip}Q_{jq}Q_{kr}Q_{ls} s_{pqrs} 
