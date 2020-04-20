@@ -264,18 +264,18 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
     #Compute torques
     m_divider = 2*(Sp[0,0]*Sp[1,1] - Sp[0,1]*Sp[0,1])
     
-    mx = (Sp[0,1]-Sp[1,1])*(invR2 + invR1)
-       + (Sp[0,1]+Sp[1,1])*(invR2 - invR1)*cos(2*alpha)
+    mx = ((Sp[0,1]-Sp[1,1])*(invR2 + invR1)
+         +(Sp[0,1]+Sp[1,1])*(invR2 - invR1)*cos(2*alpha))
     mx = mx / m_divider
 
-    my = (Sp[0,1]-Sp[0,0])*(invR2 + invR1)
-       - (Sp[0,1]+Sp[0,0])*(invR2 - invR1)*cos(2*alpha)
+    my = ((Sp[0,1]-Sp[0,0])*(invR2 + invR1)
+         -(Sp[0,1]+Sp[0,0])*(invR2 - invR1)*cos(2*alpha))
     my = my / m_divider  
 
     #Coefficients for the Jacobian
     coef1 = Sp[2,0]*mx + Sp[2,1]*my
-    coef2 = (Sp[4,0]*mx + Sp[4,1]*my)*cos(alpha) 
-          - (Sp[3,0]*mx + Sp[3,1]*my)*sin(alpha)
+    coef2 = ((Sp[4,0]*mx + Sp[4,1]*my)*cos(alpha) 
+            -(Sp[3,0]*mx + Sp[3,1]*my)*sin(alpha))
 
     def jacobian(x,z):
         ux_x = -invR1*(z+0.5*thickness)
