@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division, print_function
-
-import numpy as np
-
 from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
 from .elastic_tensors import elastic_matrices, rotate_elastic_matrix
-from .deformation import isotropic_plate, anisotropic_plate
+from .deformation import isotropic_plate, anisotropic_plate_fixed_shape, anisotropic_plate_fixed_shape
 from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis, inplane_rotation
-
+import numpy as np
 import xraylib
 
 class TTcrystal:
@@ -77,30 +74,17 @@ class TTcrystal:
 
         params = {}
 
-        #set the default values for the optional parameters
-        params['asymmetry']         = Quantity(0,'deg')
-        params['in_plane_rotation'] = Quantity(0,'deg')
-        params['debye_waller']      = 1.0
-
-        params['S']  = None 
-        params['E']  = None 
-        params['nu'] = None
-
-        params['Rx'] = None
-        params['Ry'] = None
-
-        if not filepath == None:
+        if filepath is not None:
+            
             #####################################
             #Read crystal parameters from a file#
             #####################################
 
-            try:
-                f = open(filepath,'r')    
+            #Overwrite possible kwargs 
+            kwargs = {}
+
+            with open(filepath,'r') as f:
                 lines = f.readlines()
-            except Exception as e:
-                raise e
-            finally:
-                f.close()
 
             #Boolean to check if elements of the compliance matrix are given
             is_S_given = False
@@ -111,23 +95,23 @@ class TTcrystal:
                 if not line[0] == '#':  #skip comment lines
                     ls = line.split() 
                     if ls[0] == 'crystal' and len(ls) == 2:
-                        params['crystal'] = ls[1]
+                        kwargs['crystal'] = ls[1]
                     elif ls[0] == 'hkl' and len(ls) == 4:
-                        params['hkl'] = [int(ls[1]),int(ls[2]),int(ls[3])]
+                        kwargs['hkl'] = [int(ls[1]),int(ls[2]),int(ls[3])]
                     elif ls[0] == 'in_plane_rotation' and len(ls) == 4:
-                        params['in_plane_rotation'] = [float(ls[1]),float(ls[2]),float(ls[3])]
+                        kwargs['in_plane_rotation'] = [float(ls[1]),float(ls[2]),float(ls[3])]
                     elif ls[0] == 'in_plane_rotation' and len(ls) == 3:
-                        params['in_plane_rotation'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['in_plane_rotation'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'thickness' and len(ls) == 3:
-                        params['thickness'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['thickness'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'asymmetry' and len(ls) == 3:
-                        params['asymmetry'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['asymmetry'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'debye_waller' and len(ls) == 2:
-                        params['debye_waller'] = float(ls[1])
+                        kwargs['debye_waller'] = float(ls[1])
                     elif ls[0] == 'E' and len(ls) == 3:
-                        params['E'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['E'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'nu' and len(ls) == 2:
-                        params['nu'] = float(ls[1])
+                        kwargs['nu'] = float(ls[1])
                     elif ls[0][0] == 'S' and len(ls[0]) == 3 and len(ls) == 2:
                         is_S_given = True
                         i = int(ls[0][1])-1
@@ -138,65 +122,51 @@ class TTcrystal:
                             S_matrix[i,j] = float(ls[1])
                             S_matrix[j,i] = float(ls[1])
                     elif ls[0] == 'Rx' and len(ls) == 3:
-                        params['Rx'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['Rx'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'Ry' and len(ls) == 3:
-                        params['Ry'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['Ry'] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'R' and len(ls) == 3:
-                        params['Rx'] = Quantity(float(ls[1]),ls[2])
-                        params['Ry'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['Rx'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['Ry'] = Quantity(float(ls[1]),ls[2])
                     else:
                         print('Skipped an invalid line in the file: ' + line)
 
             if is_S_given:
                 #Finalize the S matrix
-                params['S'] = Quantity(S_matrix,'GPa^-1') 
+                kwargs['S'] = Quantity(S_matrix,'GPa^-1') 
 
-            #Check the presence of the mandatory keywords
-            try:
-                params['crystal']; params['hkl']; params['thickness']
-            except:
-                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')           
+        ###################################################
+        #Check the presence of the required crystal inputs#
+        ###################################################
+        
+        try:
+            params['crystal']   = kwargs['crystal']
+            params['hkl']       = kwargs['hkl']
+            params['thickness'] = kwargs['thickness']
+        except:
+            raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')
 
-        else:
-            ####################################
-            #Use the crystal parameter keywords#
-            ####################################
+        #Optional keywords       
+        for k in ['asymmetry','in_plane_rotation']:
+            params[k] = kwargs.get(k, Quantity(0,'deg'))
 
-            #Check the presence of the required crystal inputs
-            try:
-                params['crystal'] = kwargs['crystal']
-                params['hkl'] = kwargs['hkl']
-                params['thickness'] = kwargs['thickness']
-            except:
-                raise KeyError('At least one of the required keywords crystal, hkl, or thickness is missing!')
+        params['debye_waller'] = kwargs.get('debye_waller', 1.0)
 
-            #Optional keywords
-            if 'asymmetry' in kwargs.keys():
-                params['asymmetry'] = kwargs['asymmetry']
-            if 'in_plane_rotation' in kwargs.keys():
-                params['in_plane_rotation'] = kwargs['in_plane_rotation']
-            if 'debye_waller' in kwargs.keys():
-                params['debye_waller'] = kwargs['debye_waller']
-            if 'S' in kwargs.keys():
-                params['S'] = kwargs['S']
-            if 'E' in kwargs.keys():
-                if 'nu' in kwargs.keys():
-                    params['E'] = kwargs['E']
-                    params['nu'] = kwargs['nu']
-                else:
-                    raise KeyError('Both E and nu required for isotropic material!')
-            elif 'nu' in kwargs.keys():            
-                raise KeyError('Both E and nu required for isotropic material!')
+        for k in ['S','E','nu']:
+            params[k] = kwargs.get(k, None)
 
-            if 'Rx' in kwargs.keys():
-                params['Rx'] = kwargs['Rx']
-            if 'Ry' in kwargs.keys():
-                params['Ry'] = kwargs['Ry']
-            if 'R' in kwargs.keys():  
-                if 'Rx' in kwargs.keys() or 'Rx' in kwargs.keys():
-                    print('Warning! Rx and/or Ry given but overridden by R.')
-                params['Rx'] = kwargs['R']
-                params['Ry'] = kwargs['R']
+        #Check that if either E or nu is given, then the other one is also
+        if (params['E'] is not None) ^ (params['nu'] is not None):
+            raise KeyError('Both E and nu required for isotropic material!')
+
+        params['Rx'] = kwargs.get('Rx', 'inf')
+        params['Ry'] = kwargs.get('Ry', 'inf')
+
+        if 'R' in kwargs.keys():  
+            if 'Rx' in kwargs.keys() or 'Rx' in kwargs.keys():
+                print('Warning! Rx and/or Ry given but overridden by R.')
+            params['Rx'] = kwargs['R']
+            params['Ry'] = kwargs['R']
 
         ###########################################
         #Initialize with the read/given parameters#
