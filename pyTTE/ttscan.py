@@ -38,68 +38,60 @@ class TTscan:
 
         params = {}
 
-        #Default values for optional inputs
-        params['solver']           = 'zvode_bdf'
-        params['integration_step'] = Quantity(1e-10,'um')
-        params['start_depth']      = None
-        
+        if filepath is not None:
+            
+            #####################################
+            #Read crystal parameters from a file#
+            #####################################
 
-        if not filepath == None:
-            #read file contents
-            try:
-                f = open(filepath,'r')    
-                lines = f.readlines()
-            except Exception as e:
-                raise e
-            finally:
-                f.close()
+            #Overwrite possible kwargs 
+            kwargs = {}
+            
+            with open(filepath,'r') as f:
+               lines = f.readlines()
 
             #check and parse parameters
             for line in lines:
                 if not line[0] == '#':  #skip comments
                     ls = line.split() 
                     if ls[0] == 'constant' and len(ls) == 3:
-                        params['constant'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'scan' and len(ls) == 2:
-                        params['scan'] = int(ls[1])
-                    elif ls[0] == 'scan' and len(ls) == 5:
-                        params['scan'] = Quantity(linspace(float(ls[1]),float(ls[2]),int(ls[3])),ls[4])
-                    elif ls[0] == 'polarization' and len(ls) == 2:
-                        params['polarization'] = ls[1]
-                    elif ls[0] == 'solver' and len(ls) == 2:
-                        params['solver'] = ls[1]
-                    elif ls[0] == 'integration_step' and len(ls) == 3:
-                        params['integration_step'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'start_depth' and len(ls) == 3:
-                        params['start_depth'] = Quantity(float(ls[1]),ls[2])
+                        kwargs['constant'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'scan':
+                        if len(ls) == 5:
+                            kwargs['scan'] = Quantity(linspace(float(ls[1]),float(ls[2]),int(ls[3])),ls[4])
+                        elif len(ls) == 2:
+                            kwargs['scan'] = int(ls[1])
+                        else:
+                            print('Skipped an invalid line in the file: ' + line)
+                    elif ls[0] in ['polarization','solver'] and len(ls) == 2:
+                        kwargs[ls[0]] = ls[1]
+                    elif ls[0] in ['integration_step','start_depth'] and len(ls) == 3:
+                        kwargs[ls[0]] = Quantity(float(ls[1]),ls[2])
                     else:
                         print('Skipped an invalid line in the file: ' + line)
  
-            #Check the presence of the required crystal inputs
-            try:
-                params['constant']; params['scan']; params['polarization']
-            except:
-                raise KeyError('At least one of the required keywords constant, scan, or polarization is missing!')
+        ###################################################
+        #Check the presence of the required crystal inputs#
+        ###################################################
+        
+        try:
+            params['constant']     = kwargs['constant']
+            params['scan']         = kwargs['scan']
+            params['polarization'] = kwargs['polarization']
+        except:
+            raise KeyError('At least one of the required keywords constant, scan, or polarization is missing!')                
 
-        else:
-            #Check the presence of the required crystal inputs
-            try:
-                params['constant']     = kwargs['constant']
-                params['scan']         = kwargs['scan']
-                params['polarization'] = kwargs['polarization']
-            except:
-                raise KeyError('At least one of the required keywords constant, scan, or polarization is missing!')                
+        #Optional parameters
+        params['solver']           = kwargs.get('solver','zvode_bdf')
+        params['integration_step'] = kwargs.get('integration_step', Quantity(1e-10,'um'))
+        params['start_depth']      = kwargs.get('start_depth', None)
 
-        for k in ['solver', 'integration_step', 'start_depth']:
-            if k in kwargs.keys():
-                params[k] = kwargs[k]
 
         self.set_polarization(params['polarization'])
         self.set_scan(params['scan'], params['constant'])
         self.set_solver(params['solver'])
         self.set_integration_step(params['integration_step'])
         self.set_start_depth(params['start_depth'])
-
 
     def set_polarization(self,polarization):
         if type(polarization) == type('') and polarization.lower() in ['sigma','s']:
