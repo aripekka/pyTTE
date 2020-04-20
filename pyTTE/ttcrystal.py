@@ -4,7 +4,7 @@ from __future__ import division, print_function
 from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
 from .elastic_tensors import elastic_matrices, rotate_elastic_matrix
-from .deformation import isotropic_plate, anisotropic_plate_fixed_shape, anisotropic_plate_fixed_shape
+from .deformation import isotropic_plate, anisotropic_plate_fixed_shape, anisotropic_plate_fixed_torques
 from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis, inplane_rotation
 import numpy as np
 import xraylib
@@ -201,6 +201,8 @@ class TTcrystal:
         else:
             self.set_elastic_constants(skip_update = True)
 
+        self.set_fix_to_axes(params['fix_to_axes'], skip_update = True)
+        self.set_deformation(jacobian = None, skip_update = True)
         self.set_bending_radii(params['Rx'], params['Ry'], skip_update = True)
 
         self.update_rotations_and_deformation()
@@ -414,27 +416,95 @@ class TTcrystal:
         if not skip_update:
             self.update_rotations_and_deformation()
 
+    def set_fix_to_axes(self, fix_to_axes, skip_update = False):
+        '''
+        Sets the deformation field.
+
+        Input:
+            fix_to_axes = Determines the anisotropic bending model used. If 
+                          'torques' then the plate is bent by two orthogonal 
+                          torques acting about x- and y-axes, if 'shape' then 
+                          the main axes of curvature are assumed to be along 
+                          x and y (and given by Rx and Ry).
+        '''
+
+        if fix_to_axes in ['shape', 'torques']:
+            self.fix_to_axes = fix_to_axes
+        else:
+            raise ValueError("The allowed values for fix_to_axes are 'torques' and 'shape'!" )
+                        
+        #skip this if the function is used as a part of initialization
+        if not skip_update:
+            self.update_rotations_and_deformation()
+
     def set_bending_radii(self, Rx, Ry, skip_update = False):
         '''
         Sets the meridional and sagittal bending radii.
 
         Input:
-            Rx, Ry = Meridional and sagittal bending radii wrapped in Quantity instances of type length.
-                     Alternatively can be float('inf'), 'inf' or None
+            Rx, Ry = Meridional and sagittal bending radii wrapped in Quantity 
+                     instances of type length. Alternatively can be float('inf'), 
+                     'inf', or None. If self.deformation_model == ['anisotropic',
+                     'fixed_shape'], None is interpreted as 'inf'.
         '''
 
         if isinstance(Rx, Quantity) and Rx.type() == 'length':
             self.Rx = Rx.copy()
-        elif Rx == None or Rx == 'inf' or Rx == float('inf'):
+        elif Rx == 'inf' or Rx == float('inf'):
             self.Rx = Quantity(float('inf'),'m')
+        elif Rx is None:
+            if self.deformation_model == ['anisotropic','fixed_shape']:
+                self.Rx = Quantity(float('inf'),'m')
+            else:
+                self.Rx = None
         else:
             raise ValueError('Rx has to be an instance of Quantity of type length, inf, or None!')
         if isinstance(Ry, Quantity) and Ry.type() == 'length':
             self.Ry = Ry.copy()
-        elif Ry == None or Ry == 'inf' or Ry == float('inf'):
+        elif Ry == 'inf' or Ry == float('inf'):
             self.Ry = Quantity(float('inf'),'m')
+        elif Ry is None:
+            if self.deformation_model == ['anisotropic','fixed_shape']:
+                self.Ry = Quantity(float('inf'),'m')
+            else:
+                self.Ry = None
         else:
             raise ValueError('Ry has to be an instance of Quantity of type length, inf, or None!')
+            
+        #skip this if the function is used as a part of initialization
+        if not skip_update:
+            self.update_rotations_and_deformation()
+
+    def set_deformation(self, jacobian = None, skip_update = False):
+        '''
+        Sets the deformation field.
+
+        Input:
+            jacobian = function returning the partial derivatives of the 
+                       displacement vector u as a function of (x,z). If None,
+                       the deformation model will be determined from 
+                       self.isotropy, and self.fix_to_axes
+        '''
+
+        if jacobian is not None:
+            #test the given jacobian
+            ujac = jacobian(0,0)
+
+            if len(ujac) == 2:
+               if len(ujac[0]) == 2 and len(ujac[1]) == 2:
+                   self.deformation_model = ['custom', jacobian]
+               else:
+                   raise ValueError('Output of jacobian has to be 2x2 list or array!')
+            else:
+                raise ValueError('Output of jacobian has to be 2x2 list or array!')
+        else:
+            if self.isotropy == 'isotropic':
+                self.deformation_model = ['isotropic']
+            else:
+                if self.fix_to_axes == 'shape':
+                    self.deformation_model = ['anisotropic', 'fixed_shape']                
+                else:
+                    self.deformation_model = ['anisotropic', 'fixed_torques']                            
             
         #skip this if the function is used as a part of initialization
         if not skip_update:
@@ -470,23 +540,31 @@ class TTcrystal:
         self.crystal_directions = np.linalg.inv(dir_prim_rot)
 
         #Apply rotations of the crystal to the elastic matrix
-        if self.isotropy == 'anisotropic':
-            self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), Quantity._unit2str(self.S0.unit))
+        if self.deformation_model[0] == 'anisotropic':
+            self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), 
+                              Quantity._unit2str(self.S0.unit))
         
         #calculate the depth-dependent deformation jacobian
-        if self.Rx.value == float('inf') and self.Ry.value == float('inf'):
+        if self.deformation_model[0] == 'custom':
+            self.displacement_jacobian = self.deformation_model[1]
+        elif self.Rx.value == float('inf') and self.Ry.value == float('inf'):
             self.displacement_jacobian = None
-        elif self.isotropy == 'anisotropic':
-            self.displacement_jacobian = anisotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
-                                                           self.Ry.in_units(self._jacobian_length_unit),
-                                                           self.S.in_units('GPa^-1'),
-                                                           self.thickness.in_units(self._jacobian_length_unit))
-
-        else:
+        elif self.deformation_model[0] == 'anisotropic':
+            if self.deformation_model[1] == 'fixed_shape': 
+                self.displacement_jacobian = anisotropic_plate_fixed_shape(self.Rx.in_units(self._jacobian_length_unit),
+                                                                           self.Ry.in_units(self._jacobian_length_unit),
+                                                                           self.S.in_units('GPa^-1'),
+                                                                           self.thickness.in_units(self._jacobian_length_unit))
+            else:
+                self.displacement_jacobian = anisotropic_plate_fixed_torques(self.Rx.in_units(self._jacobian_length_unit),
+                                                                             self.Ry.in_units(self._jacobian_length_unit),
+                                                                             self.S.in_units('GPa^-1'),
+                                                                             self.thickness.in_units(self._jacobian_length_unit))[0]
+        else: 
             self.displacement_jacobian = isotropic_plate(self.Rx.in_units(self._jacobian_length_unit),
                                                          self.Ry.in_units(self._jacobian_length_unit),
                                                          self.nu,
-                                                         self.thickness.in_units(self._jacobian_length_unit))
+                                                         self.thickness.in_units(self._jacobian_length_unit))[0]
 
     def __str__(self):
         #TODO: Improve output presentation
