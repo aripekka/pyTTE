@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from numpy import linspace
-
+from __future__ import division, print_function
 from .quantity import Quantity
+from numpy import linspace
 
 class TTscan:
     '''
