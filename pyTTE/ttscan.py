@@ -5,69 +5,69 @@ from numpy import linspace
 from .quantity import Quantity
 
 class TTscan:
-        '''
-        Class containing all the parameters for an energy or angle scan together 
-        with the solver settings. An instance can be initialized either by 
-        giving a path to a file defining the scan parameters, or passing them 
-        to the function as keyword arguments. Keyword parameters are omitted 
-        if filepath given.
+    '''
+    Class containing all the parameters for an energy or angle scan together 
+    with the solver settings. An instance can be initialized either by giving 
+    a path to a file defining the scan parameters, or passing them to the 
+    function as keyword arguments. Keyword parameters are omitted if filepath 
+    given.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
+    
+    filepath : str
+        Path to the file with crystal parameters
+
+    *OR*
+
+    constant : Quantity of type energy or angle
+        Determines value of the incident photon energy or the fixed incidence 
+        angle fixed during the scan
+    
+    scan : Quantity of type energy or angle OR int
+        Either a list of scan points wrapped in a Quantity e.g. 
+        Quantity(np.linspace(-100,100,250),'meV') OR a non-negative integer 
+        number of scan points for automatic scan range determination. The unit 
+        of Quantity has to be angle if the unit of constant is energy and vice 
+        versa.
         
-        filepath : str
-            Path to the file with crystal parameters
-
-        *OR*
-
-        constant : Quantity of type energy or angle
-            Determines value of the incident photon energy or the fixed incidence 
-            angle fixed during the scan
+    polarization : str
+        'sigma' or 's' for sigma-polarized beam OR 'pi' or 'p' for pi-polarized
+        beam
         
-        scan : Quantity of type energy or angle OR int
-            Either a list of scan points wrapped in a Quantity e.g. 
-            Quantity(np.linspace(-100,100,250),'meV') OR a non-negative integer 
-            number of scan points for automatic scan range determination. The 
-            unit of Quantity has to be angle if the unit of constant is energy 
-            and vice versa.
-            
-        polarization : str
-            'sigma' or 's' for sigma-polarized beam OR 'pi' or 'p' for pi-
-            polarized beam
-            
-        (optional keywords)
-            
-        solver : str
-            The solver used to integrate the 1D TT-equation. Currently only 
-            'zvode_bdf' is supported.
-            
-        integration_step : Quantity of type length 
-            Step size of the integrator. For 'zvode_bdf' this is the minimum 
-            step. Default is 1e-10 um.
+    (optional keywords)
+        
+    solver : str
+        The solver used to integrate the 1D TT-equation. Currently only 
+        'zvode_bdf' is supported.
+        
+    integration_step : Quantity of type length 
+        Step size of the integrator. For 'zvode_bdf' this is the minimum step. 
+        Default is Quantity(1e-10,'um').
 
-        start_depth : Quantity of type length 
-            An alternative starting point for the integration. Useful for thick 
-            crystals in the Bragg case (not used in the Laue case). To make 
-            sense, this should be between 0 and -thickness.
+    start_depth : Quantity of type length 
+        An alternative starting point for the integration. Useful for thick 
+        crystals in the Bragg case (not used in the Laue case). To make sense, 
+        this should be between 0 and -thickness.
 
 
-        Attributes
-        ----------
-        
-        polarization : str
-        
-        constant : Quantity of type energy or angle
+    Attributes
+    ----------
+    
+    polarization : str
+    
+    constant : Quantity of type energy or angle
 
-        scan : Quantity of type energy or angle (opposite of constant), or int
+    scan : Quantity of type energy or angle (opposite of constant), or int
+    
+    solver : str
+    
+    integration_step : Quantity of type length
+    
+    start_depth : Quantity of type length
         
-        solver : str
-        
-        integration_step : Quantity of type length
-        
-        start_depth : Quantity of type length
-            
-        '''
-
+    '''
+    
     def __init__(self, filepath = None, **kwargs):
         params = {}
 
