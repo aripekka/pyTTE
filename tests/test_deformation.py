@@ -108,14 +108,17 @@ def test_anisotropic_fixed_shape_R_input():
     
     #These should work
     for R in [1.0,2,-.5]:
-        J = anisotropic_plate_fixed_shape(R,1,S,1e-4)
-        J = anisotropic_plate_fixed_shape(1,R,S,1e-4)
-
+        J,R1,R2 = anisotropic_plate_fixed_shape(R,1,S,1e-4)
+        J,_,R2 = anisotropic_plate_fixed_shape(1,R,S,1e-4)
+        assert R1 == R
+        assert R2 == R
         
     for R in ['inf', '-inf',float('inf'),np.inf,-np.inf]:
-        J = anisotropic_plate_fixed_shape(R,1,S,1e-4)
-        J = anisotropic_plate_fixed_shape(1,R,S,1e-4)
-    
+        J,R1,R2 = anisotropic_plate_fixed_shape(R,1,S,1e-4)
+        J,_,R2 = anisotropic_plate_fixed_shape(1,R,S,1e-4)
+        assert R1 == 'inf'
+        assert R2 == 'inf'
+        
     #These should fail
     for R in ['sdsd',0,'2',None]:
         all_pass = True
@@ -141,7 +144,7 @@ def test_consistency():
     for Rs in [(1,1),(-1,1),(2,0.5),(1,'inf'),('inf','inf')]:
         J1 = isotropic_plate(Rs[0],Rs[1],nu,1e-4)[0]
         J2 = anisotropic_plate_fixed_torques(Rs[0],Rs[1],S,1e-4)[0]
-        J3 = anisotropic_plate_fixed_shape(Rs[0],Rs[1],S,1e-4)
+        J3 = anisotropic_plate_fixed_shape(Rs[0],Rs[1],S,1e-4)[0]
         
         for i in range(x.size):
             J1i = np.array(J1(x[i],z[i]))

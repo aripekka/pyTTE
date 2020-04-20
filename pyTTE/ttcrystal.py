@@ -568,7 +568,7 @@ class TTcrystal:
             if self.deformation_model[0] == 'anisotropic':
                 if self.deformation_model[1] == 'fixed_shape': 
                     self.displacement_jacobian = anisotropic_plate_fixed_shape(Rx, Ry, self.S.in_units('GPa^-1'),
-                                                                               self.thickness.in_units(self._jacobian_length_unit))
+                                                                               self.thickness.in_units(self._jacobian_length_unit))[0]
                 else:
                     self.displacement_jacobian = anisotropic_plate_fixed_torques(Rx, Ry, self.S.in_units('GPa^-1'),
                                                                                  self.thickness.in_units(self._jacobian_length_unit))[0]

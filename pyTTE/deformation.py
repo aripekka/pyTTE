@@ -47,7 +47,6 @@ def isotropic_plate(R1,R2,nu,thickness):
         input). Calculated by the function if due to anticlastic bending.
     '''
 
-
     if R1 is None:
         if R2 is None or isinf(float(R2)):
             invR1 = 0
@@ -135,8 +134,7 @@ def anisotropic_plate_fixed_torques(R1,R2,S,thickness):
     
     R2 : float
         The sagittal bending radius due to torques (in the units defined by the
-        input). Calculated by the function if due to anticlastic bending.
-        
+        input). Calculated by the function if due to anticlastic bending.      
     '''
 
     S = array(S)
@@ -227,24 +225,32 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
         Returns the partial derivatives of the displacement vector u as a 
         function of coordinates (x,z). The length scale is determined by the
         units of R1, R2 and thickness.
-        
-    '''
+
+    R1 : float
+        The meridional bending radius due to torques (in the units defined by 
+        the input). Returned for the output compatibility.
     
+    R2 : float
+        The sagittal bending radius due to torques (in the units defined by the
+        input). Returned for the output compatibility.            
+    '''
     
     #Convert the bending radii to their inverses:    
     if isinf(float(R1)):
         invR1 = 0
+        R1 = 'inf'
     else:
         invR1 = 1.0/R1
 
     if isinf(float(R2)):
         invR2 = 0
+        R2 = 'inf'
     else:
         invR2 = 1.0/R2
 
     #Calculate the rotation angle alpha
     S = array(S)
-    meps = finfo(type(S[0][0])).eps
+    meps = finfo(type(S[0][0])).eps #machine epsilon
     
     if abs(S[5,0]) < meps and abs(S[5,1]) < meps and abs(S[1,1] - S[0,0]) < meps\
     and abs(S[0,0] + S[1,1] - 2*S[0,1] - S[5,5]) < meps:
@@ -286,4 +292,4 @@ def anisotropic_plate_fixed_shape(R1,R2,S,thickness):
 
         return [[ux_x,ux_z],[uz_x,uz_z]]
 
-    return jacobian
+    return jacobian, R1, R2
