@@ -16,7 +16,7 @@ class TTscan:
     ----------
     
     filepath : str
-        Path to the file with crystal parameters
+        Path to the file with scan and solver parameters
 
     *OR*
 
@@ -65,7 +65,6 @@ class TTscan:
     integration_step : Quantity of type length
     
     start_depth : Quantity of type length
-        
     '''
     
     def __init__(self, filepath = None, **kwargs):
