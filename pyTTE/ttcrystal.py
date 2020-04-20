@@ -172,35 +172,30 @@ class TTcrystal:
         #Initialize with the read/given parameters#
         ###########################################
 
-        #used to prevent recalculation of the deformation in parameter set functions during init
-        self._initialized = False
-
         #determines the length scale in which the position coordinate to the jacobian are given
         self._jacobian_length_unit = 'um'
 
-        self.set_crystal(params['crystal'])
-        self.set_reflection(params['hkl'])
-        self.set_thickness(params['thickness'])
-        self.set_asymmetry(params['asymmetry'])
-        self.set_in_plane_rotation(params['in_plane_rotation'])
-        self.set_debye_waller(params['debye_waller'])
+        self.set_crystal(params['crystal'], skip_update = True)
+        self.set_reflection(params['hkl'], skip_update = True)
+        self.set_thickness(params['thickness'], skip_update = True)
+        self.set_asymmetry(params['asymmetry'], skip_update = True)
+        self.set_in_plane_rotation(params['in_plane_rotation'], skip_update = True)
+        self.set_debye_waller(params['debye_waller'], skip_update = True)
 
-        if not params['S'] == None:
-            self.set_elastic_constants(S = params['S'])
+        if params['S'] is not None:
+            self.set_elastic_constants(S = params['S'], skip_update = True)
             if 'E' in params.keys() or 'nu' in params.keys():
                 print('Warning! Isotropic E and/or nu given but overridden by the compliance matrix S.')
-        elif (not params['E'] == None) and (not params['nu'] == None):
-            self.set_elastic_constants(E = params['E'], nu = params['nu'])
+        elif (params['E'] is not None) and (params['nu'] is not None):
+            self.set_elastic_constants(E = params['E'], nu = params['nu'], skip_update = True)
         else:
-            self.set_elastic_constants()
+            self.set_elastic_constants(skip_update = True)
 
-        self.set_bending_radii(params['Rx'], params['Ry'])
+        self.set_bending_radii(params['Rx'], params['Ry'], skip_update = True)
 
         self.update_rotations_and_deformation()
 
-        self._initialized = True
-
-    def set_crystal(self, crystal_str):
+    def set_crystal(self, crystal_str, skip_update = False):
         '''
         Changes the crystal keeping other parameters the same. Recalculates
         the crystallographic parameters. The effect on the deformation depends 
@@ -226,10 +221,10 @@ class TTcrystal:
         self.direct_primitives, self.reciprocal_primitives = crystal_vectors(self.crystal_data)
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_reflection(self, hkl):
+    def set_reflection(self, hkl, skip_update = False):
         '''
         Set a new reflection and calculate the new crystallographic data and deformation
         for rotated crystal.
@@ -249,10 +244,10 @@ class TTcrystal:
             raise ValueError('Input argument hkl does not have 3 elements!')
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_thickness(self, thickness):
+    def set_thickness(self, thickness, skip_update = False):
         '''
         Set crystal thickness and recalculate the deformation field.
 
@@ -267,10 +262,10 @@ class TTcrystal:
             raise ValueError('Thickness has to be a Quantity instance of type length!')
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_asymmetry(self, asymmetry):
+    def set_asymmetry(self, asymmetry, skip_update = False):
         '''
         Set the asymmetry angle.
 
@@ -285,10 +280,10 @@ class TTcrystal:
             raise ValueError('Asymmetry angle has to be a Quantity instance of type angle!')
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_in_plane_rotation(self, in_plane_rotation):
+    def set_in_plane_rotation(self, in_plane_rotation, skip_update = False):
         '''
         Set the in-plane rotation angle.
 
@@ -344,10 +339,10 @@ class TTcrystal:
             raise ValueError('In-plane rotation angle has to be a Quantity instance of type angle OR a list of floats size 3!')
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_debye_waller(self, debye_waller):
+    def set_debye_waller(self, debye_waller, skip_update = False):
         '''
         Set the Debye-Waller factor.
 
@@ -362,10 +357,10 @@ class TTcrystal:
             raise ValueError('Debye-Waller factor has to be a float or integer in range [0,1]!')
 
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_elastic_constants(self, **kwargs):
+    def set_elastic_constants(self, S = None, E = None, nu = None, skip_update = False):
         '''
         Set either the compliance matrix (fully anisotropic) or Young's modulus and Poisson ratio (isotropic).
 
@@ -382,34 +377,34 @@ class TTcrystal:
             nu = Poisson's ratio (float or int) 
         '''
 
-        if 'S' in kwargs.keys():
-            if isinstance(kwargs['S'], Quantity) and kwargs['S'].type() == 'pressure^-1':
-                if kwargs['S'].value.shape == (6,6):
-                    self.isotropy = 'anisotropic'
-                    self.S0 = kwargs['S'].copy()
-                else:
-                    raise ValueError('Shape of S has to be (6,6)!')
-            else:
-                raise ValueError('S has to be an instance of Quantity of type pressure^-1!')
-        elif 'E' in kwargs.keys() and 'nu' in kwargs.keys():
-            if isinstance(kwargs['E'], Quantity) and kwargs['E'].type() == 'pressure':
-                if type(kwargs['nu']) in [int, float]:
+        if (E is not None) and (nu is not None):
+            if isinstance(E, Quantity) and E.type() == 'pressure':
+                if type(nu) in [int, float]:
                     self.isotropy = 'isotropic'
-                    self.E  = kwargs['E'].copy()
-                    self.nu = kwargs['nu']
+                    self.E  = E.copy()
+                    self.nu = nu
                 else:
                     raise ValueError('nu has to be float or int!')
             else:
                 raise ValueError('E has to be an instance of Quantity of type pressure!')
+        elif S is not None:
+            if isinstance(S, Quantity) and S.type() == 'pressure^-1':
+                if S.value.shape == (6,6):
+                    self.isotropy = 'anisotropic'
+                    self.S0 = S.copy()
+                else:
+                    raise ValueError('Shape of S has to be (6,6)!')
+            else:
+                raise ValueError('S has to be an instance of Quantity of type pressure^-1!')
         else:
             self.isotropy = 'anisotropic'
             self.S0 = Quantity(0.01*elastic_matrices(self.crystal_data['name'])[1],'GPa^-1')
             
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
-    def set_bending_radii(self, Rx, Ry):
+    def set_bending_radii(self, Rx, Ry, skip_update = False):
         '''
         Sets the meridional and sagittal bending radii.
 
@@ -432,7 +427,7 @@ class TTcrystal:
             raise ValueError('Ry has to be an instance of Quantity of type length, inf, or None!')
             
         #skip this if the function is used as a part of initialization
-        if self._initialized:
+        if not skip_update:
             self.update_rotations_and_deformation()
 
     def update_rotations_and_deformation(self):
