@@ -1,5 +1,5 @@
 from __future__ import division, print_function
-from numpy import inf, array, finfo, cos, sin, arctan2, isinf
+from numpy import array, finfo, cos, sin, arctan2, isinf
 from .elastic_tensors import rotate_elastic_matrix
 from .rotation_matrix import inplane_rotation
 
@@ -139,7 +139,7 @@ def anisotropic_plate_fixed_torques(R1,R2,S,thickness):
         
     '''
 
-    S = np.array(S)
+    S = array(S)
 
     if R1 is None:             
         m1 = 0 #no torque about y-axis
@@ -181,9 +181,9 @@ def anisotropic_plate_fixed_torques(R1,R2,S,thickness):
         m2 = (S[0,1]*invR1 - S[0,0]*invR2)/m_divider
     
     #Coefficients for the Jacobian
-    coef1 = Sp[0,0]*m1 + Sp[0,1]*m2
-    coef2 = Sp[4,0]*m1 + Sp[4,1]*m2
-    coef3 = Sp[2,0]*m1 + Sp[2,1]*m2
+    coef1 = S[0,0]*m1 + S[0,1]*m2
+    coef2 = S[4,0]*m1 + S[4,1]*m2
+    coef3 = S[2,0]*m1 + S[2,1]*m2
     
     def jacobian(x,z):
         ux_x = coef1*(z+0.5*thickness)
