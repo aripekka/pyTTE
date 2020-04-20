@@ -66,9 +66,9 @@ class TTcrystal:
         Cartesian basis is aligned with the unit vectors. 
 
         If an input file is used, the non-zero elements of the compliance matrix
-        in the upper triangle and on the diagonal should be given in the units GPa^-1 
-        (order doesn't matter). Any lower triangle inputs will be omitted as they are 
-        obtained symmetrically from the upper triangle. 
+        in the upper triangle and on the diagonal should be given in the units 
+        GPa^-1 (order doesn't matter). Any lower triangle inputs will be omitted 
+        as they are obtained by symmetry from the upper triangle. 
 
         Example input: 
             S11  0.00723
