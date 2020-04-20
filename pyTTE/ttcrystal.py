@@ -436,10 +436,10 @@ class TTcrystal:
         #skip this if the function is used as a part of initialization
         if not skip_update:
             if self.deformation_model[0] == 'custom':                
-                self.set_deformation(self, jacobian = self.deformation_model[1], skip_update = True)
+                self.set_deformation(jacobian = self.deformation_model[1], skip_update = True)
             else:
-                self.set_deformation(self, jacobian = None, skip_update = True)
-            self.set_bending_radii(self, self.Rx, self.Ry, skip_update = True)
+                self.set_deformation(jacobian = None, skip_update = True)
+            self.set_bending_radii(self.Rx, self.Ry, skip_update = True)
             self.update_rotations_and_deformation()
 
     def set_bending_radii(self, Rx, Ry, skip_update = False):
@@ -513,7 +513,7 @@ class TTcrystal:
             
         #skip this if the function is used as a part of initialization
         if not skip_update:
-            self.set_bending_radii(self, self.Rx, self.Ry, skip_update = True)
+            self.set_bending_radii(self.Rx, self.Ry, skip_update = True)
             self.update_rotations_and_deformation()
 
     def update_rotations_and_deformation(self):
