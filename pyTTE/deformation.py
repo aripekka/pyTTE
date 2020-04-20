@@ -3,34 +3,96 @@ from numpy import inf, array, finfo, cos, sin, arctan2, isinf
 from .elastic_tensors import rotate_elastic_matrix
 from .rotation_matrix import inplane_rotation
 
-def isotropic_plate(Rx,Ry,nu,thickness):
+def isotropic_plate(R1,R2,nu,thickness):
     '''
-    Creates a function for computing the Jacobian of
-    the displacement field for an isotropic plate.
-    HINT: For cylindrical bending with anticlastic
-    curvature, set Ry = -Rx/nu
+    Creates a function for computing the Jacobian of the displacement field 
+    for an isotropic plate.
+
+    Parameters
+    ----------
+    
+    R1 : float, 'inf' or None
+        The meridional bending radius due to torques (in the same units as R1 
+        and thickness). Use 'inf' if the direction is not curved. None sets the 
+        corresponding torque to zero and R1 is calculated as an anticlastic
+        reaction to the other torque.
+        
+    R2 : float, 'inf' or None
+        The sagittal bending radius due to torques (in the same units as R1 
+        and thickness). Use 'inf' if the direction is not curved. None sets the 
+        corresponding torque to zero and R1 is calculated as an anticlastic
+        reaction to the other torque.
+        
+    nu : float
+        Poisson's ratio of the material.
+        
+    thickness : float
+        The thickness of the crystal (in the same units as R1 and R2)
+
+
+    Returns
+    -------    
+        
+    jacobian : function
+        Returns the partial derivatives of the displacement vector u as a 
+        function of coordinates (x,z). The length scale is determined by the
+        units of R1, R2 and thickness.
+
+    R1 : float
+        The meridional bending radius due to torques (in the units defined by 
+        the input). Calculated by the function if due to anticlastic bending.
+    
+    R2 : float
+        The sagittal bending radius due to torques (in the units defined by the
+        input). Calculated by the function if due to anticlastic bending.
     '''
 
-    if Rx == 'inf' or Rx == 'Inf' or Rx == inf:
-        invRx = 0
-    else:
-        invRx = 1/Rx
 
-    if Ry == 'inf' or Ry == 'Inf' or Ry == inf:
-        invRy = 0
+    if R1 is None:
+        if R2 is None or isinf(float(R2)):
+            invR1 = 0
+            invR2 = 0        
+
+            R1 = 'inf'
+            R2 = 'inf'
+        else:
+            R1 = -R2/nu #anticlastic bending
+            invR1 = 1.0/R1
+
+    elif R2 is None:
+        if isinf(float(R1)):
+            invR1 = 0
+            invR2 = 0
+
+            R1 = 'inf'
+            R2 = 'inf'
+        else:
+            R2 = -R1/nu #anticlastic bending
+            invR2 = 1.0/R2
+
     else:
-        invRy = 1/Ry
+        if isinf(float(R1)):
+            invR1 = 0
+            R1 = 'inf'
+        else:
+            invR1 = 1/R1
+    
+        if isinf(float(R2)):
+            invR2 = 0
+            R2 = 'inf'
+        else:
+            invR2 = 1/R2
 
     def jacobian(x,z):
-        ux_x = -(z+0.5*thickness)*invRx
-        ux_z = -x*invRx
+        ux_x = -(z+0.5*thickness)*invR1
+        ux_z = -x*invR1
 
-        uz_x = x*invRx
-        uz_z = nu/(1-nu)*(invRx+invRy)*(z+0.5*thickness)
+        uz_x = x*invR1
+        uz_z = nu/(1-nu)*(invR1+invR2)*(z+0.5*thickness)
 
         return [[ux_x,ux_z],[uz_x,uz_z]]
 
-    return jacobian
+    return jacobian, R1, R2
 
 def anisotropic_plate_fixed_torques(R1,R2,S,thickness):
     '''
