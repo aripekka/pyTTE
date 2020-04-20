@@ -11,70 +11,107 @@ import xraylib
 
 class TTcrystal:
     '''
-    Contains all the information about the crystal and its depth-dependent deformation.
+    Contains all the information about the crystal and its depth-dependent 
+    deformation. An instance can be initialized either by giving a path to a 
+    file defining the crystal parameters, or passing them to the function as 
+    keyword arguments. Keyword parameters are omitted if filepath given.
+
+    Parameters
+    ----------
+
+    filepath : str
+        Path to the file with crystal parameters
+
+    *OR*
+
+    crystal : str
+        String representation of the crystal in compliance with xraylib
+
+    hkl : list, tuple, or 1D array of size 3
+        Miller indices of the reflection (ints or floats)
+
+    thickness : Quantity of type length 
+        Thickness of the crystal wafer e.g. Quantity(300,'um')
+
+    (optional keywords)
+    
+    asymmetry : Quantity of type angle
+        Clockwise-positive asymmetry angle wrapped in a Quantity instance.
+        0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
+
+    in_plane_rotation : Quantity of type angle OR a list of size 3
+        Counterclockwise-positive rotation of the crystal directions about the
+        normal vector of (hkl) wrapped in a Quantity instance of type angle
+        OR a crystal direction [q,r,s] corresponding to a direct space vector
+        R = q*a1 + r*a2 + s*a3 that together with the crystal will be rotated 
+        about the hkl vector so that its component perpendicular to the normal 
+        of (hkl) will be aligned with the y-axis. Will raise an error if 
+        R || hkl.
+        
+    debye_waller : float in range [0, 1]
+        The Debye-Waller factor to account for the thermal motion. Definined as
+        exp(-0.5 * h^2 * <u^2>), where h is the reciprocal lattice vector 
+        corresponding to (hkl) and <u^2> is the expectation value of mean 
+        displacement of atoms parallel to h. Currently assumes that all atoms
+        share the same <u^2>. Defaults to 1 (= 0 K).
+
+    S : 6x6 array wrapped in a Quantity instance of type pressure^-1
+        The compliance matrix in the Voigt notation. Overrides the default 
+        compliance matrix given by elastic_tensors and any user inputs for E 
+        and nu. 
+                       
+        Note that S is supposed to be in the Cartesian coordinate system aligned
+        with the conventional unit vectors before any rotations i.e. x || a_1 
+        and a_2 is in the xy-plane. For rectagular systems this means that the 
+        Cartesian basis is aligned with the unit vectors. 
+
+        If an input file is used, the non-zero elements of the compliance matrix
+        in the upper triangle and on the diagonal should be given in the units GPa^-1 
+        (order doesn't matter). Any lower triangle inputs will be omitted as they are 
+        obtained symmetrically from the upper triangle. 
+
+        Example input: 
+            S11  0.00723
+            S22  0.00723
+            S33  0.00723
+            S12 -0.00214
+            etc.
+
+    E : Quantity of type pressure
+        Young's modulus for isotropic material. Overrides the default compliance 
+        matrix. Neglected if S is given. Required with nu but can have an 
+        arbitrary value for 1D TT-calculation, as the isotropic deformation
+        is not dependent on E.
+        
+    nu : float
+        Poisson's ratio for isotropic material. Overrides the default compliance 
+        matrix. Neglected if S is given. Requires that E also given.
+
+    Rx, Ry : Quantity of type length
+        Meridional and sagittal bending radii for toroidal bending wrapped in 
+        Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf 
+        (no bending). Overridden by R. 
+        
+        The other one can be set to None if isotropic model is used or if 
+        fix_to_axes = 'torque'; it is then determined by the anticlastic bending.    
+        
+    R : Quantity of type length
+        Bending radius for spherical bending wrapped in Quantity instance. 
+        Overrides Rx and Ry.
+        
+    fix_to_axes : str 
+        Used to determine the anisotropic bending model used. If 'torques' then 
+        the plate is bent by two orthogonal torques acting about x- and y-axes, 
+        if 'shape' then the main axes of curvature are assumed to be along x 
+        and y (and given by Rx and Ry).
+        
+        
+    - See the technical documentation in docs for more details. -
     '''
 
+
     def __init__(self, filepath = None, **kwargs):
-        '''
-        Initializes the TTcrystal instance. The instance can be initialized either by giving a path
-        to a file defining the crystal parameters, or passing them to the function as keyword arguments.
-        Keyword parameters are omitted if filepath given.
 
-        Input:
-            filepath     = path to the file with crystal parameters
-
-            OR
-
-            crystal      = string representation of the crystal in compliance with xraylib
-            hkl          = list-like object of size 3 of the Miller indices of the reflection (ints or floats)
-            thickness    = the thickness of the crystal wrapped in a Quantity instance e.g. Quantity(300,'um')
-
-            (Optional)
-            asymmetry         = clockwise-positive asymmetry angle wrapped in a Quantity instance.
-                                0 deg for symmetric Bragg case (default), 90 deg for symmetric Laue
-            in_plane_rotation = counterclockwise-positive rotation of the crystal directions about hkl-vector 
-                                wrapped in a Quantity instance of type angle
-                                OR
-                                a crystal direction [q,r,s] corresponding to a direct space vector
-                                R = q*a1 + r*a2 + s*a3 which will be rotated about the hkl vector so that its
-                                component perpendicular to hkl (and the crystal as a whole with it) will be 
-                                aligned with the y-axis. Will raise an error if R || hkl.
-            debye_waller      = The Debye-Waller factor to account for thermal motion. Defaults to 1 (0 K).
-
-            S                 = 6x6 compliance matrix wrapped in a Quantity instance. Overrides the default 
-                                compliance matrix given by elastic_tensors and given E and nu, if given. 
-                                
-                                Note that S is supposed to be in the Cartesian coordinate system aligned
-                                with the conventional unit vectors before any rotations i.e. x || a_1 
-                                and a_2 is in the xy-plane. For rectagular systems this means that the 
-                                Cartesian basis is aligned with the unit vectors. 
-
-                                If an input file is used, the non-zero elements of the compliance matrix
-                                in the upper triangle and on the diagonal should be given in the units GPa^-1 
-                                (order doesn't matter). Any lower triangle inputs will be omitted as they are 
-                                obtained symmetrically from the upper triangle. 
-
-                                Example input: 
-                                    S11  0.00723
-                                    S22  0.00723
-                                    S33  0.00723
-                                    S12 -0.00214
-                                    etc.
-
-            E                 = Young's modulus for isotropic material in a Quantity instance. Overrides the 
-                                default compliance matrix. Neglected if S is given
-            nu                = Poisson's ratio for isotropic material. Overrides the default compliance matrix. 
-                                Neglected if S is given.
-
-            Rx, Ry            = Meridional and sagittal bending radii for toroidal bending wrapped in 
-                                Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf (no bending). 
-                                Overridden by R. The other one can be set to None if isotropic model is used or 
-                                if fix_to_axes = 'torque' when it is determined by the anticlastic bending.
-            R                 = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry.
-            fix_to_axes       = Used to determine the anisotropic bending model used. If 'torques' then the plate is
-                                bent by two orthogonal torques acting about x- and y-axes, if 'shape' then the main 
-                                axes of curvature are assumed to be along x and y (and given by Rx and Ry).
-        '''
 
         params = {}
 
