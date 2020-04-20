@@ -71,7 +71,8 @@ def test_init_optional_inputs():
                   'Rx' : ([Quantity(1,'m'), Quantity(-50,'cm'),'inf',None], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1])]),
                   'Ry' : ([Quantity(1,'m'), Quantity(-50,'cm'),'inf',None], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1])]),
                   'R' : ([Quantity(1,'m'), Quantity(-50,'cm'),'inf',None], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1])]),
-                 }
+                  'fix_to_axes' : (['shape', 'torques'], [Quantity(1,'m'), Quantity(-50,'cm'),'inf',None, 598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1])]),
+    }
     #Elastic constants E, nu and S are tested in a separate function
     
     for k in opt_inputs:

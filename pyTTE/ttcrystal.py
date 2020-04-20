@@ -68,8 +68,12 @@ class TTcrystal:
 
             Rx, Ry            = Meridional and sagittal bending radii for toroidal bending wrapped in 
                                 Quantity instances e.g. Quantity(1,'m'). If omitted, defaults to inf (no bending). 
-                                Overridden by R.
-            R                 = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry. 
+                                Overridden by R. The other one can be set to None if isotropic model is used or 
+                                if fix_to_axes = 'torque' when it is determined by the anticlastic bending.
+            R                 = Bending radius for spherical bending wrapped in Quantity instance. Overrides Rx and Ry.
+            fix_to_axes       = Used to determine the anisotropic bending model used. If 'torques' then the plate is
+                                bent by two orthogonal torques acting about x- and y-axes, if 'shape' then the main 
+                                axes of curvature are assumed to be along x and y (and given by Rx and Ry).
         '''
 
         params = {}
@@ -98,18 +102,17 @@ class TTcrystal:
                         kwargs['crystal'] = ls[1]
                     elif ls[0] == 'hkl' and len(ls) == 4:
                         kwargs['hkl'] = [int(ls[1]),int(ls[2]),int(ls[3])]
-                    elif ls[0] == 'in_plane_rotation' and len(ls) == 4:
-                        kwargs['in_plane_rotation'] = [float(ls[1]),float(ls[2]),float(ls[3])]
-                    elif ls[0] == 'in_plane_rotation' and len(ls) == 3:
-                        kwargs['in_plane_rotation'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'thickness' and len(ls) == 3:
-                        kwargs['thickness'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'asymmetry' and len(ls) == 3:
-                        kwargs['asymmetry'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'in_plane_rotation':
+                        if len(ls) == 4:
+                            kwargs['in_plane_rotation'] = [float(ls[1]),float(ls[2]),float(ls[3])]
+                        elif  len(ls) == 3:
+                            kwargs['in_plane_rotation'] = Quantity(float(ls[1]),ls[2])
+                        else:
+                            print('Skipped an invalid line in the file: ' + line)
                     elif ls[0] == 'debye_waller' and len(ls) == 2:
                         kwargs['debye_waller'] = float(ls[1])
-                    elif ls[0] == 'E' and len(ls) == 3:
-                        kwargs['E'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] in ['thickness', 'asymmetry', 'E'] and len(ls) == 3:
+                        kwargs[ls[0]] = Quantity(float(ls[1]),ls[2])
                     elif ls[0] == 'nu' and len(ls) == 2:
                         kwargs['nu'] = float(ls[1])
                     elif ls[0][0] == 'S' and len(ls[0]) == 3 and len(ls) == 2:
@@ -121,13 +124,18 @@ class TTcrystal:
                         else:
                             S_matrix[i,j] = float(ls[1])
                             S_matrix[j,i] = float(ls[1])
-                    elif ls[0] == 'Rx' and len(ls) == 3:
+                    elif ls[0] in ['Rx', 'Ry']:
+                        if len(ls) == 3:
+                            kwargs[ls[0]] = Quantity(float(ls[1]),ls[2])
+                        elif len(ls) == 2:
+                            kwargs[ls[0]] = ls[1]
+                        else:
+                            print('Skipped an invalid line in the file: ' + line)                           
+                    elif ls[0] == 'R' and len(ls) == 3:                        
                         kwargs['Rx'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'Ry' and len(ls) == 3:
                         kwargs['Ry'] = Quantity(float(ls[1]),ls[2])
-                    elif ls[0] == 'R' and len(ls) == 3:
-                        kwargs['Rx'] = Quantity(float(ls[1]),ls[2])
-                        kwargs['Ry'] = Quantity(float(ls[1]),ls[2])
+                    elif ls[0] == 'fix_to_axes' and len(ls) == 2:
+                        kwargs['fix_to_axes'] = ls[1]                        
                     else:
                         print('Skipped an invalid line in the file: ' + line)
 
@@ -167,6 +175,8 @@ class TTcrystal:
                 print('Warning! Rx and/or Ry given but overridden by R.')
             params['Rx'] = kwargs['R']
             params['Ry'] = kwargs['R']
+
+        params['fix_to_axes'] = kwargs.get('fix_to_axes', 'shape')
 
         ###########################################
         #Initialize with the read/given parameters#
