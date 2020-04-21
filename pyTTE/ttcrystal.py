@@ -589,7 +589,7 @@ class TTcrystal:
         #calculate the depth-dependent deformation jacobian
         if self.deformation_model[0] == 'custom':
             self.displacement_jacobian = self.deformation_model[1]
-        elif self.Rx.value == float('inf') and self.Ry.value == float('inf'):
+        elif self.Rx is not None and self.Rx.value == float('inf') and self.Ry is not None and self.Ry.value == float('inf'):
             self.displacement_jacobian = None
         else:
             if self.Rx is not None:
