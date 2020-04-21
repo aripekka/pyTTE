@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import division, print_function
 from .quantity import Quantity
 from .crystal_vectors import crystal_vectors
@@ -620,6 +619,16 @@ class TTcrystal:
         else:
             elastic_str = "Young's modulus E: " + str(self.E) + "\nPoisson's ratio nu: "+ str(self.nu) 
 
+        if self.deformation_model[0] == 'custom':
+            deformation_str = 'custom Jacobian (bending radii and elastic parameters neglected)'
+        elif self.deformation_model[0] == 'isotropic':
+            deformation_str = 'isotropic toroidal (built-in)'            
+        elif self.deformation_model[0] == 'anisotropic':
+            if self.deformation_model[1] == 'fixed_shape':
+                deformation_str = 'anisotropic toroidal, fixed shape (built-in)'            
+            else:
+                deformation_str = 'anisotropic toroidal, fixed torques (built-in)'            
+
         return 'Crystal: ' + self.crystal_data['name'] + '\n' +\
                'Crystallographic parameters:\n' +\
                '    a = ' + str(self.crystal_data['a']*0.1)[:8] + ' nm,  b = ' + str(self.crystal_data['b']*0.1)[:8] + ' nm,  c = ' + str(self.crystal_data['c']*0.1)[:8] + ' nm\n'+\
@@ -638,9 +647,10 @@ class TTcrystal:
                'Crystal directions parallel to the Cartesian axes (after rotations):\n'+\
                '    x || ' + np.array2string(self.crystal_directions[:,0]/np.abs(self.crystal_directions[:,0]).max(),precision=4,suppress_small=True)+'\n'+\
                '    y || ' + np.array2string(self.crystal_directions[:,1]/np.abs(self.crystal_directions[:,1]).max(),precision=4,suppress_small=True)+'\n'+\
-               '    z || ' + np.array2string(self.crystal_directions[:,2]/np.abs(self.crystal_directions[:,2]).max(),precision=4,suppress_small=True)+'\n'+\
-               'Debye-Waller factor: ' + str(self.debye_waller)+'\n\n'+\
+               '    z || ' + np.array2string(self.crystal_directions[:,2]/np.abs(self.crystal_directions[:,2]).max(),precision=4,suppress_small=True)+'\n\n'+\
                'Crystal thickness: ' + str(self.thickness)+'\n'+\
+               'Debye-Waller factor: ' + str(self.debye_waller)+'\n\n'+\
+               'Deformation model: ' + deformation_str +'\n'+\
                'Meridional bending radius: ' + str(self.Rx) +'\n'+\
-               'Sagittal bending radius: ' + str(self.Ry) +'\n\n'+\
+               'Sagittal bending radius: ' + str(self.Ry) +'\n'+\
                'Material elastic isotropy: ' + str(self.isotropy) +'\n' + elastic_str        
