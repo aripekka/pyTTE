@@ -566,6 +566,7 @@ class TakagiTaupin:
             else:
                 plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
             plt.ylabel('Reflectivity')
+            plt.title('Takagi-Taupin solution in the Bragg case')
         else:
             plt.plot(self.solution['scan'].value, self.solution['forward_diffraction'],label = 'Forward-diffraction')
             plt.plot(self.solution['scan'].value, self.solution['diffraction'],label = 'Diffraction')
@@ -576,7 +577,8 @@ class TakagiTaupin:
                 plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
             plt.ylabel('Intensity w.r.t incident')
             plt.legend()
-
+            plt.title('Takagi-Taupin solution in the Laue case')
+            
         plt.show()
 
     def __str__(self):
