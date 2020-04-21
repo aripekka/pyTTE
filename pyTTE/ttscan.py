@@ -21,8 +21,8 @@ class TTscan:
     *OR*
 
     constant : Quantity of type energy or angle
-        Determines value of the incident photon energy or the fixed incidence 
-        angle fixed during the scan
+        Determines value of the incident photon energy or the incidence angle 
+        w.r.t to the Bragg plane fixed during the scan
     
     scan : Quantity of type energy or angle OR int
         Either a list of scan points wrapped in a Quantity e.g. 
