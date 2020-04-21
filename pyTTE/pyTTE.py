@@ -172,9 +172,13 @@ class TakagiTaupin:
                 print('Setting theta to 90 deg.')
                 theta_bragg = Quantity(90, 'deg')
 
-        #set the scan vector
-        if self.scan_object.scan[0] == 'automatic':
 
+        if self.scan_object.scan[0] == 'automatic':
+            
+            ################################################
+            #Estimate the optimal scan limits automatically#
+            ################################################
+            
             F0, Fh, Fb = TakagiTaupin.calculate_structure_factors(crystal, 
                                                                   hkl, 
                                                                   energy_bragg, 
@@ -261,7 +265,7 @@ class TakagiTaupin:
                     #Mirror the theta range w.t.r. 90 deg
                     theta_max = Quantity(np.pi-np.arcsin(sin_th_min),'rad')-theta_bragg
                 else:
-                    theta_max  = Quantity(np.arcsin(sin_th_max),'rad')-theta_bragg
+                    theta_max = Quantity(np.arcsin(sin_th_max),'rad')-theta_bragg
                     
                 print('Using automatically determined scan limits:')
                 print('Theta min:', theta_min.in_units('urad'),'urad')
@@ -271,11 +275,13 @@ class TakagiTaupin:
                 scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),self.scan_object.scan[1]),'urad')
                 scan_steps = scan.value.size
                 scan_shape = scan.value.shape
-        else:
+        else:            
+            #Use the scan limits given by the user            
             scan = self.scan_object.scan[1]
             scan_steps = scan.value.size
             scan_shape = scan.value.shape
 
+        #Convert relative scans to absolute energies or incidence angles
         if self.scan_object.scantype == 'energy':
             theta  = theta_bragg
             energy  = energy_bragg + scan
@@ -283,6 +289,7 @@ class TakagiTaupin:
             energy = energy_bragg
             theta = theta_bragg + scan
 
+        #Wavelength and wavenumber
         wavelength = hc/energy
         k = 2*np.pi/wavelength
 
@@ -319,8 +326,7 @@ class TakagiTaupin:
         print('')
 
 
-        #Compute susceptibilities
-        
+        #Compute susceptibilities       
         F0, Fh, Fb = TakagiTaupin.calculate_structure_factors(crystal, 
                                                               hkl, 
                                                               energy, 
@@ -334,10 +340,12 @@ class TakagiTaupin:
         chib = np.conj(cte*Fb)
         
         #DEBUG
+        print('Structure factors')
         print('F0   : ',np.mean(F0))
         print('Fh   : ',np.mean(Fh))
         print('Fb   : ',np.mean(Fb))
         print('')
+        print('Susceptibilities')
         print('chi0 : ',np.mean(chi0))
         print('chih : ',np.mean(chih))
         print('chib : ',np.mean(chib))
