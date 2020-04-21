@@ -146,25 +146,32 @@ class TakagiTaupin:
         #Calculate the constants needed by TT-equations#
         ################################################
 
-        hc = Quantity(1.23984193,'eV um') #Planck's constant * speed of light
-      
-        crystal = self.crystal_object.crystal_data
-        hkl = self.crystal_object.hkl
-        phi = self.crystal_object.asymmetry
-        displacement_jacobian = self.crystal_object.displacement_jacobian
-        debye_waller = self.crystal_object.debye_waller
+        #Introduction of shorthands
+        crystal   = self.crystal_object.crystal_data
+        hkl       = self.crystal_object.hkl
+        phi       = self.crystal_object.asymmetry
+        thickness = self.crystal_object.thickness
 
-        d   = Quantity(xraylib.Crystal_dSpacing(crystal,*hkl),'A')     #spacing of Bragg planes
-        V   = Quantity(crystal['volume'],'A^3')                        #volume of unit cell
-        r_e = Quantity(2.81794033e-15,'m')                             #classical electron radius
-        h   = 2*np.pi/d                                                #reciprocal wave vector length
+        debye_waller          = self.crystal_object.debye_waller
+        displacement_jacobian = self.crystal_object.displacement_jacobian
+
+        scan_type     = self.scan_object.scantype
+        scan_constant = self.scan_object.constant
+        scan_points   = self.scan_object.scan
+        polarization  = self.scan_object.polarization
+
+        hc  = Quantity(1.23984193,'eV um')                         #Planck's constant * speed of light
+        d   = Quantity(xraylib.Crystal_dSpacing(crystal,*hkl),'A') #spacing of Bragg planes
+        V   = Quantity(crystal['volume'],'A^3')                    #volume of unit cell
+        r_e = Quantity(2.81794033e-15,'m')                         #classical electron radius
+        h   = 2*np.pi/d                                            #length of reciprocal lattice vector
 
         #Energies and angles corresponding to the constant parameter and its counterpart given by Bragg's law
-        if self.scan_object.scantype == 'energy':
-            theta_bragg = self.scan_object.constant
+        if scan_type == 'energy':
+            theta_bragg = scan_constant
             energy_bragg = hc/(2*d*np.sin(theta_bragg.in_units('rad')))
         else:
-            energy_bragg = self.scan_object.constant
+            energy_bragg = scan_constant
             if not (hc/(2*d*energy_bragg)).in_units('1') > 1:
                 theta_bragg = Quantity(np.arcsin((hc/(2*d*energy_bragg)).in_units('1')), 'rad')
             else:
@@ -173,7 +180,7 @@ class TakagiTaupin:
                 theta_bragg = Quantity(90, 'deg')
 
 
-        if self.scan_object.scan[0] == 'automatic':
+        if scan_points[0] == 'automatic':
             
             ################################################
             #Estimate the optimal scan limits automatically#
@@ -196,7 +203,7 @@ class TakagiTaupin:
 
             #Find the (rough) maximum and minimum of the deformation term
             if displacement_jacobian is not None:
-                z = np.linspace(0,-self.crystal_object.thickness.in_units('um'),1000)
+                z = np.linspace(0,-thickness.in_units('um'),1000)
                 x = -z*np.cos((theta_bragg+phi).in_units('rad'))/np.sin((theta_bragg+phi).in_units('rad'))
 
                 sin_phi = np.sin(phi.in_units('rad'))
@@ -241,7 +248,7 @@ class TakagiTaupin:
             beta_max = b_const_term - Quantity(def_min,'um^-1') + 2*darwin_width_term
 
             #convert beta limits to scan vectors
-            if self.scan_object.scantype == 'energy':
+            if scan_type == 'energy':
                 energy_min = beta_min*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
                 energy_max = beta_max*energy_bragg/(h*np.sin(theta_bragg.in_units('rad')))
 
@@ -250,17 +257,16 @@ class TakagiTaupin:
                 print('E max:', energy_max.in_units('meV'),'meV')
                 print('')
 
-                scan = Quantity(np.linspace(energy_min.in_units('meV'),energy_max.in_units('meV'),self.scan_object.scan[1]),'meV')
+                scan = Quantity(np.linspace(energy_min.in_units('meV'),energy_max.in_units('meV'),scan_points[1]),'meV')
                 scan_steps = scan.value.size
                 scan_shape = scan.value.shape
             else:
-
-                #This avoids taking arcsin of values over 1
                 sin_th_min = np.sin(theta_bragg.in_units('rad'))+(beta_min/h).in_units('1')
                 sin_th_max = np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')
 
                 theta_min = Quantity(np.arcsin(sin_th_min),'rad')-theta_bragg
 
+                #This avoids taking arcsin of values over 1
                 if sin_th_max > 1:
                     #Mirror the theta range w.t.r. 90 deg
                     theta_max = Quantity(np.pi-np.arcsin(sin_th_min),'rad')-theta_bragg
@@ -272,17 +278,17 @@ class TakagiTaupin:
                 print('Theta max:', theta_max.in_units('urad'),'urad')
                 print('')
 
-                scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),self.scan_object.scan[1]),'urad')
+                scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),scan_points[1]),'urad')
                 scan_steps = scan.value.size
                 scan_shape = scan.value.shape
         else:            
             #Use the scan limits given by the user            
-            scan = self.scan_object.scan[1]
+            scan = scan_points[1]
             scan_steps = scan.value.size
             scan_shape = scan.value.shape
 
         #Convert relative scans to absolute energies or incidence angles
-        if self.scan_object.scantype == 'energy':
+        if scan_type == 'energy':
             theta  = theta_bragg
             energy  = energy_bragg + scan
         else:
@@ -309,7 +315,7 @@ class TakagiTaupin:
             geometry = 'bragg'
 
         #Polarization factor
-        if self.scan_object.polarization == 'sigma':
+        if polarization == 'sigma':
             C = 1;
             print('Solving for sigma-polarization')
         else:
@@ -393,7 +399,7 @@ class TakagiTaupin:
         c0   =   c0.in_units('um^-1'); ch = ch.in_units('um^-1'); cb = cb.in_units('um^-1')
         g0   =   g0.in_units('um^-1'); gb = gb.in_units('um^-1')
         beta = beta.in_units('um^-1'); h  =  h.in_units('um^-1')
-        thickness = self.crystal_object.thickness.in_units('um')
+        thickness = thickness.in_units('um')
 
         def integrate_single_scan_step(step):
             #local variables for speedup
@@ -411,7 +417,7 @@ class TakagiTaupin:
                 sin_phi = np.sin(phi.in_units('rad'))
                 cos_phi = np.cos(phi.in_units('rad'))
 
-                if self.scan_object.scantype == 'energy':
+                if scan_type == 'energy':
                     cot_alpha0 = np.cos(alpha0.in_units('rad'))/np.sin(alpha0.in_units('rad'))
                     sin_alphah = np.sin(alphah.in_units('rad'))
                     cos_alphah = np.cos(alphah.in_units('rad'))
