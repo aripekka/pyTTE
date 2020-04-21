@@ -127,13 +127,13 @@ As stated in the previous section, the deformation is introduced through $\parti
 Again we write the partial derivatives in terms of $x$ and $z$. In this case, however, neither $x$- or $z$-derivatives can be dropped as they both contain physical information about the rotation and the separation of the diffractive planes. Since the beam propagates also in the $x$-direction, the situation is not strictly speaking one dimensional. However, since the $x$-coordinate is geometrically related to $z$, the problem can be treated as such. Therefore the deformation term becomes
 \begin{equation}
 \frac{\partial (\mathbf{h}\cdot \mathbf{u})}{\partial s_h} = h \left( 
-\sin \varphi \cos \alpha' \frac{\partial u_x}{\partial x} 
-+\sin \varphi \sin \alpha' \frac{\partial u_x}{\partial z} 
-+\cos \varphi \cos \alpha' \frac{\partial u_z}{\partial x} 
-+\cos \varphi \sin \alpha' \frac{\partial u_z}{\partial z} 
+\sin \varphi \cos \alpha_h \frac{\partial u_x}{\partial x} 
++\sin \varphi \sin \alpha_h \frac{\partial u_x}{\partial z} 
++\cos \varphi \cos \alpha_h \frac{\partial u_z}{\partial x} 
++\cos \varphi \sin \alpha_h \frac{\partial u_z}{\partial z} 
  \right),
 \end{equation}
-where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
+where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha_0$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
 
 \subsection{Anisotropic plate, bending due to applied torques}
 According to \cite{Chukhovskii_1994}, the components of the displacement field for an anisotropic plate bent by two (scaled) torques $m_1$ and $m_2$ acting about $y$- and $x$-axes, respectively, are
