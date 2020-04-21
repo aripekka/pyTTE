@@ -131,11 +131,14 @@ class TakagiTaupin:
 
 
     def run(self):
+        
+        print('\nSOLVING THE 1D TAKAGI-TAUPIN EQUATION...\n')
+        
         #Check that the required scan parameters are in place
-        if self.crystal_object == None:
+        if self.crystal_object is None:
             print('ERROR! No crystal data found, TTcrystal object needed.')
             return
-        if self.scan_object == None:
+        if self.scan_object is None:
             print('ERROR! No scan data found, TTscan object needed.')
             return
 
@@ -188,7 +191,7 @@ class TakagiTaupin:
             gammah = 1/np.sin((theta_bragg-phi).in_units('rad'))
 
             #Find the (rough) maximum and minimum of the deformation term
-            if not displacement_jacobian == None:
+            if displacement_jacobian is not None:
                 z = np.linspace(0,-self.crystal_object.thickness.in_units('um'),1000)
                 x = -z*np.cos((theta_bragg+phi).in_units('rad'))/np.sin((theta_bragg+phi).in_units('rad'))
 
@@ -385,7 +388,7 @@ class TakagiTaupin:
             gammah_step = gammah[step]
 
             #Define deformation term for bent crystal
-            if not displacement_jacobian == None:
+            if displacement_jacobian is not None:
                 #Precomputed sines and cosines
                 sin_phi = np.sin(phi.in_units('rad'))
                 cos_phi = np.cos(phi.in_units('rad'))
@@ -516,7 +519,7 @@ class TakagiTaupin:
         Plots the calculated solution
         '''
 
-        if self.solution == None:
+        if self.solution is None:
             print('No calculated Takagi-Taupin curves found! Call run() first!')
             return
 
