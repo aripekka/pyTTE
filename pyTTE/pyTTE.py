@@ -131,8 +131,16 @@ class TakagiTaupin:
 
 
     def run(self):
-        
-        print('\nSOLVING THE 1D TAKAGI-TAUPIN EQUATION...\n')
+                
+        startmsg = '\nSolving the 1D Takagi-Taupin equation for '\
+                 + self.crystal_object.crystal_data['name']\
+                 + '(' + str(self.crystal_object.hkl[0]) + ','\
+                 + str(self.crystal_object.hkl[1]) + ','\
+                 + str(self.crystal_object.hkl[2]) + ')'\
+                 + ' reflection'
+
+        print(startmsg)
+        print('-' * len(startmsg) + '\n')
         
         #Check that the required scan parameters are in place
         if self.crystal_object is None:
