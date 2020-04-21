@@ -550,4 +550,9 @@ class TakagiTaupin:
 
     def __str__(self):
         #TODO: Improve output presentation
-        return str(self.crystal_object) +'\n'+ str(self.scan_object)
+        return   'CRYSTAL PARAMETERS\n'\
+               + '------------------\n\n'\
+               + str(self.crystal_object) + '\n\n'\
+               + 'SCAN PARAMETERS\n'\
+               + '---------------\n\n'\
+               + str(self.scan_object)
