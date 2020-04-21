@@ -250,9 +250,19 @@ class TakagiTaupin:
                 scan_steps = scan.value.size
                 scan_shape = scan.value.shape
             else:
-                theta_min  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_min/h).in_units('1')),'rad')-theta_bragg
-                theta_max  = Quantity(np.arcsin(np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')),'rad')-theta_bragg
 
+                #This avoids taking arcsin of values over 1
+                sin_th_min = np.sin(theta_bragg.in_units('rad'))+(beta_min/h).in_units('1')
+                sin_th_max = np.sin(theta_bragg.in_units('rad'))+(beta_max/h).in_units('1')
+
+                theta_min = Quantity(np.arcsin(sin_th_min),'rad')-theta_bragg
+
+                if sin_th_max > 1:
+                    #Mirror the theta range w.t.r. 90 deg
+                    theta_max = Quantity(np.pi-np.arcsin(sin_th_min),'rad')-theta_bragg
+                else:
+                    theta_max  = Quantity(np.arcsin(sin_th_max),'rad')-theta_bragg
+                    
                 print('Using automatically determined scan limits:')
                 print('Theta min:', theta_min.in_units('urad'),'urad')
                 print('Theta max:', theta_max.in_units('urad'),'urad')
