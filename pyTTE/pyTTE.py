@@ -394,30 +394,20 @@ class TakagiTaupin:
                     cot_alpha0 = np.cos(alpha0.in_units('rad'))/np.sin(alpha0.in_units('rad'))
                     sin_alphah = np.sin(alphah.in_units('rad'))
                     cos_alphah = np.cos(alphah.in_units('rad'))
-
-                    def strain_term(z):
-                        x = -z*cot_alpha0
-                        u_jac = displacement_jacobian(x,z)
-                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0] 
-                                    +sin_phi*sin_alphah*u_jac[0][1]
-                                    +cos_phi*cos_alphah*u_jac[1][0]
-                                    +cos_phi*sin_alphah*u_jac[1][1]
-                                    )
-                        return gammah_step*duh_dsh
                 else:
                     cot_alpha0 = np.cos(alpha0.in_units('rad')[step])/np.sin(alpha0.in_units('rad')[step])
                     sin_alphah = np.sin(alphah.in_units('rad')[step])
                     cos_alphah = np.cos(alphah.in_units('rad')[step])
 
-                    def strain_term(z):
-                        x = -z*cot_alpha0
-                        u_jac = displacement_jacobian(x,z)
-                        duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0]
-                                    +sin_phi*sin_alphah*u_jac[0][1]
-                                    +cos_phi*cos_alphah*u_jac[1][0] 
-                                    +cos_phi*sin_alphah*u_jac[1][1]
-                                    )
-                        return gammah_step*duh_dsh
+                def strain_term(z):
+                    x = -z*cot_alpha0
+                    u_jac = displacement_jacobian(x,z)
+                    duh_dsh = h*(sin_phi*cos_alphah*u_jac[0][0]
+                                +sin_phi*sin_alphah*u_jac[0][1]
+                                +cos_phi*cos_alphah*u_jac[1][0] 
+                                +cos_phi*sin_alphah*u_jac[1][1]
+                                )
+                    return gammah_step*duh_dsh
             else:
                 #Non-bent crystal 
                 def strain_term(z): 
