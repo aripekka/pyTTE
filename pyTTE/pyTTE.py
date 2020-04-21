@@ -529,7 +529,9 @@ class TakagiTaupin:
                              'beta' : beta,
                              'geometry' : 'bragg', 
                              'reflectivity' : reflectivity, 
-                             'transmission': transmission
+                             'transmission': transmission,
+                             'crystal_parameters' : str(self.crystal_object),
+                             'scan_parameters' : str(self.scan_object),                             
                             }
 
             return scan.value, reflectivity, transmission
@@ -541,7 +543,9 @@ class TakagiTaupin:
                              'beta' : beta,
                              'geometry' : 'laue', 
                              'diffraction' : diffraction, 
-                             'forward_diffraction': forward_diffraction
+                             'forward_diffraction': forward_diffraction,
+                             'crystal_parameters' : str(self.crystal_object),
+                             'scan_parameters' : str(self.scan_object),
                             }
 
             return scan.value, diffraction, forward_diffraction
