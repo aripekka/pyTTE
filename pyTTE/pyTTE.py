@@ -500,7 +500,8 @@ class TakagiTaupin:
             reflectivity = output[:,0]
             transmission = output[:,1]
 
-            self.solution = {'scan' : scan, 
+            self.solution = {'scan' : scan,
+                             'beta' : beta,
                              'geometry' : 'bragg', 
                              'reflectivity' : reflectivity, 
                              'transmission': transmission
@@ -512,6 +513,7 @@ class TakagiTaupin:
             forward_diffraction = output[:,1]      
 
             self.solution = {'scan' : scan, 
+                             'beta' : beta,
                              'geometry' : 'laue', 
                              'diffraction' : diffraction, 
                              'forward_diffraction': forward_diffraction
