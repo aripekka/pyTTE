@@ -598,6 +598,59 @@ class TakagiTaupin:
             
         plt.show()
 
+    def save(self, path, include_header = True):
+        '''
+        Saves the solution in to a file.
+        
+        Parameters
+        ----------
+        
+        path : str
+            Path of the save file
+            
+        include_header : bool, optional
+            Determines if the metadata is included in the header. The default 
+            is True.
+
+        Returns
+        -------
+        
+        None.
+
+        '''
+
+        if self.solution is None:
+            print('No calculated Takagi-Taupin curves found! Call run() first!')
+            return
+
+
+        #Build the data matrix
+        data = []
+        data.append(self.solution['scan'].value.reshape(-1))
+        
+        if self.solution['geometry'] == 'bragg':
+            data.append(self.solution['reflectivity'].reshape(-1))
+        else:
+            data.append(self.solution['diffraction'].reshape(-1))
+            data.append(self.solution['forward_diffraction'].reshape(-1))
+
+        data = np.array(data).T
+
+        if include_header:
+            header = str(self) + '\n' + 'SOLVER OUTPUT LOG\n'\
+                     + '-----------------\n' + self.solution['solver_output_log'] + '\n'
+
+            header = header + 'SOLUTION\n' + '--------\n' 
+            header = header + 'Scan (' + Quantity._unit2str(self.solution['scan'].unit) + ') '
+
+            if self.solution['geometry'] == 'bragg':
+                header =  header + 'Reflectivity'                
+            else:
+                header =  header + 'Diffraction Forward-diffraction'                
+        else:
+            header = ''
+
+        np.savetxt(path, data, header=header)
 
     def __str__(self):
         return   'CRYSTAL PARAMETERS\n'\
