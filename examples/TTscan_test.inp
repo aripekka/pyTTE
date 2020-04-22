@@ -1,6 +1,0 @@
-constant 88 deg
-scan -3 -1 250 eV
-polarization sigma
-solver zvode_bdf
-#integration_step 1 nm
-start_depth -0.5 mm
