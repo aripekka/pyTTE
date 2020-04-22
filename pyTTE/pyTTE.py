@@ -496,8 +496,9 @@ class TakagiTaupin:
                 if self.scan_object.start_depth is not None:
                     start_depth = self.scan_object.start_depth.in_units('um')
                     if start_depth > 0 or start_depth < -thickness:
-                        output_log = print_and_log('Warning! The given starting depth ' + str(start_depth) 
-                                                   + 'um is outside the crystal!',output_log) 
+                        global output_log
+                        output_log = print_and_log('Warning! The given starting depth ' + str(start_depth)\
+                                                   + 'um is outside the crystal!', output_log) 
                     r.set_initial_value(0,start_depth)
                 else:
                     r.set_initial_value(0,-thickness)
@@ -507,6 +508,7 @@ class TakagiTaupin:
                 return reflectivity, transmission
             else:
                 if self.scan_object.start_depth is not None:
+                    global output_log
                     output_log = print_and_log('Warning! The alternative start depth is negleted in the Laue case.', output_log) 
                 r.set_initial_value([0,1],0)
                 res=r.integrate(-thickness)
