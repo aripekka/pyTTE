@@ -131,6 +131,14 @@ class TakagiTaupin:
 
 
     def run(self):
+
+        #Check that the required scan parameters are in place
+        if self.crystal_object is None:
+            print('ERROR! No crystal data found, TTcrystal object needed.')
+            return
+        if self.scan_object is None:
+            print('ERROR! No scan data found, TTscan object needed.')
+            return
                 
         startmsg = '\nSolving the 1D Takagi-Taupin equation for '\
                  + self.crystal_object.crystal_data['name']\
@@ -142,14 +150,6 @@ class TakagiTaupin:
         print(startmsg)
         print('-' * len(startmsg) + '\n')
         
-        #Check that the required scan parameters are in place
-        if self.crystal_object is None:
-            print('ERROR! No crystal data found, TTcrystal object needed.')
-            return
-        if self.scan_object is None:
-            print('ERROR! No scan data found, TTscan object needed.')
-            return
-
         ################################################
         #Calculate the constants needed by TT-equations#
         ################################################
