@@ -1,5 +1,5 @@
 crystal LiF
 hkl 2 0 0
-thickness 500 um
-asymmetry 5 deg
+thickness 200 um
+asymmetry 2.5 deg
 Rx 1 m

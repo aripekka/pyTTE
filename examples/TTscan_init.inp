@@ -1,5 +1,5 @@
-constant 12 keV
-scan -50 50 100 arcsec
+constant 8 keV
+scan -100 25 150 arcsec
 polarization sigma
 solver zvode_bdf
 integration_step 1 nm
