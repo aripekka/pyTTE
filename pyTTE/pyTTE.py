@@ -305,8 +305,8 @@ class TakagiTaupin:
                     theta_max = Quantity(np.arcsin(sin_th_max),'rad')-theta_bragg
 
                 output_log = print_and_log('Using automatically determined scan limits:',output_log)
-                output_log = print_and_log('Theta min: ' + str(energy_min.in_units('urad')) + ' urad',output_log)                
-                output_log = print_and_log('Theta max: ' + str(energy_max.in_units('urad')) + ' urad\n',output_log)
+                output_log = print_and_log('Theta min: ' + str(theta_min.in_units('urad')) + ' urad',output_log)                
+                output_log = print_and_log('Theta max: ' + str(theta_max.in_units('urad')) + ' urad\n',output_log)
 
                 scan = Quantity(np.linspace(theta_min.in_units('urad'),theta_max.in_units('urad'),scan_points[1]),'urad')
                 scan_steps = scan.value.size
