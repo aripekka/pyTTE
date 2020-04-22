@@ -17,7 +17,6 @@ setup(name='pyTTE',
       url='https://github.com/aripekka/pyTTE/',
       packages=[
                 'pyTTE',
-                'pyTTE.examples',
                ],
       install_requires=[
                         'numpy',
