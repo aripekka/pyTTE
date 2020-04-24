@@ -84,6 +84,7 @@ def test_optional_parameters():
     #the first elements in the tuple are valid inputs and the second are  invalid 
     opt_inputs = {
                   'solver' : (['zvode_bdf'], [598, Quantity(-5,'keV'),'asds',None]),
+                  'output_type' : (['intensity', 'photon_flux'], [598, Quantity(-5,'keV'),'asds',None]),        
                   'integration_step' : ([Quantity(1,'um'), Quantity(-1,'mm')], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1]), None, Quantity(np.array([1,2,3]),'keV')]),
                   'start_depth' : ([Quantity(1,'um'), Quantity(-1,'mm'), None], [598, Quantity(-5,'keV'), [1,'1',2], np.array([-1,1]), Quantity(np.array([1,2,3]),'keV')]),
                  }

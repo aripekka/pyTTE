@@ -50,6 +50,10 @@ class TTscan:
         crystals in the Bragg case (not used in the Laue case). To make sense, 
         this should be between 0 and -thickness.
 
+    output_type : str
+        'intensity' if output reflectivity/forward-diffractivity/transmission
+        are given in terms of wave intensities or 'photon_flux' in terms of
+        photon fluxes. Matters only for asymmetric cuts. Default is 'photon_flux'.
 
     Attributes
     ----------
@@ -65,6 +69,8 @@ class TTscan:
     integration_step : Quantity of type length
     
     start_depth : Quantity of type length
+    
+    output_type : Quantity of type length    
     '''
     
     def __init__(self, filepath = None, **kwargs):
@@ -95,7 +101,7 @@ class TTscan:
                             kwargs['scan'] = int(ls[1])
                         else:
                             print('Skipped an invalid line in the file: ' + line)
-                    elif ls[0] in ['polarization','solver'] and len(ls) == 2:
+                    elif ls[0] in ['polarization','solver','output_type'] and len(ls) == 2:
                         kwargs[ls[0]] = ls[1]
                     elif ls[0] in ['integration_step','start_depth'] and len(ls) == 3:
                         kwargs[ls[0]] = Quantity(float(ls[1]),ls[2])
@@ -115,6 +121,7 @@ class TTscan:
 
         #Optional parameters
         params['solver']           = kwargs.get('solver','zvode_bdf')
+        params['output_type']           = kwargs.get('output_type','photon_flux')
         params['integration_step'] = kwargs.get('integration_step', Quantity(1e-10,'um'))
         params['start_depth']      = kwargs.get('start_depth', None)
 
@@ -122,6 +129,7 @@ class TTscan:
         self.set_polarization(params['polarization'])
         self.set_scan(params['scan'], params['constant'])
         self.set_solver(params['solver'])
+        self.set_output_type(params['output_type'])        
         self.set_integration_step(params['integration_step'])
         self.set_start_depth(params['start_depth'])
 
@@ -156,6 +164,12 @@ class TTscan:
         else:
             raise ValueError("Invalid solver! Currently only 'zvode_bdf' is supported.")    
 
+    def set_output_type(self,output_type):
+        if type(output_type) == type('') and output_type.lower() in ['intensity','photon_flux']:
+            self.output_type = output_type.lower()
+        else:
+            raise ValueError("Invalid output_type! Has to be either 'intensity' or 'photon_flux'.")
+
     def set_integration_step(self, integration_step):
         if isinstance(integration_step, Quantity) and integration_step.type() == 'length':
             if not integration_step.value.size == 1:
@@ -185,12 +199,18 @@ class TTscan:
         else:
             N_points = self.scan[1]
             limit_str = 'automatic'
+
+        if self.output_type == 'intensity':
+            output_type = 'wave intensity'
+        else:
+            output_type = 'photon flux'
             
         return 'Scan type     : ' + self.scantype + '\n' +\
                'Scan constant : ' + str(self.constant) +'\n' +\
                'Polarization  : ' + self.polarization  +'\n' +\
                'Scan points   : ' + str(N_points)  +'\n' +\
                'Scan range    : ' + limit_str   +'\n\n'+\
+               'Output type                : ' + output_type +'\n' +\
                'Integrator                 : ' + self.solver + '\n'+\
                '(Minimum) integration step : ' + str(self.integration_step)+'\n'\
                'Alternative starting depth : ' + str(self.start_depth)+'\n'    
