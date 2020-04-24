@@ -501,17 +501,29 @@ class TakagiTaupin:
                     r.set_initial_value(0,start_depth)
                 else:
                     r.set_initial_value(0,-thickness)
-                res=r.integrate(0)     
-                reflectivity = np.abs(res[0])**2*gamma0[step]/gammah[step] #gamma-part takes into account beam footprints
+
+                res=r.integrate(0)
+                
+                if self.scan_object.output_type == 'photon_flux':
+                    reflectivity = np.abs(res[0])**2*gamma0[step]/gammah[step]
+                else:
+                    reflectivity = np.abs(res[0])**2
+
                 transmission = -1 #Not implemented yet
+                    
                 return reflectivity, transmission
             else:
                 if self.scan_object.start_depth is not None:
                     output_log = print_and_log('Warning! The alternative start depth is negleted in the Laue case.', output_log) 
                 r.set_initial_value([0,1],0)
                 res=r.integrate(-thickness)
-                diffraction = np.abs(res[0]*res[1])**2
+                if self.scan_object.output_type == 'photon_flux':
+                    diffraction = np.abs(res[0]*res[1])**2*gamma0[step]/np.abs(gammah[step])
+                else:                    
+                    diffraction = np.abs(res[0]*res[1])**2
+                    
                 forward_diffraction = np.abs(res[1])**2
+
                 return diffraction, forward_diffraction
 
         n_cores = multiprocess.cpu_count()
@@ -545,6 +557,7 @@ class TakagiTaupin:
                              'geometry' : 'bragg', 
                              'reflectivity' : reflectivity, 
                              'transmission': transmission,
+                             'output_type' : self.scan_object.output_type,
                              'crystal_parameters' : str(self.crystal_object),
                              'scan_parameters' : str(self.scan_object),
                              'solver_output_log' : output_log
@@ -560,6 +573,7 @@ class TakagiTaupin:
                              'geometry' : 'laue', 
                              'diffraction' : diffraction, 
                              'forward_diffraction': forward_diffraction,
+                             'output_type' : self.scan_object.output_type,
                              'crystal_parameters' : str(self.crystal_object),
                              'scan_parameters' : str(self.scan_object),
                              'solver_output_log' : output_log
@@ -582,7 +596,12 @@ class TakagiTaupin:
                 plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
             else:
                 plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
-            plt.ylabel('Reflectivity')
+
+            if self.solution['output_type'] == 'photon_flux':
+                plt.ylabel('Reflectivity in terms of photon flux')
+            else:
+                plt.ylabel('Reflectivity in terms of wave intensity')                
+
             plt.title('Takagi-Taupin solution in the Bragg case')
         else:
             plt.plot(self.solution['scan'].value, self.solution['forward_diffraction'],label = 'Forward-diffraction')
@@ -592,7 +611,12 @@ class TakagiTaupin:
                 plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
             else:
                 plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
-            plt.ylabel('Intensity w.r.t incident')
+
+            if self.solution['output_type'] == 'photon_flux':
+                plt.ylabel('Photon flux w.r.t incident')
+            else:
+                plt.ylabel('Intensity w.r.t incident')         
+
             plt.legend()
             plt.title('Takagi-Taupin solution in the Laue case')
             
