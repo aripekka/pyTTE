@@ -51,9 +51,9 @@ class TTscan:
         this should be between 0 and -thickness.
 
     output_type : str
-        'intensity' if output reflectivity/forward-diffractivity/transmission
-        are given in terms of wave intensities or 'photon_flux' in terms of
-        photon fluxes. Matters only for asymmetric cuts. Default is 'photon_flux'.
+        'intensity' if output reflectivity/diffractivity/transmission are given 
+        in terms of wave intensities or 'photon_flux' in terms of photon fluxes. 
+        Matters only for asymmetric cuts. Default is 'photon_flux'.
 
     Attributes
     ----------
