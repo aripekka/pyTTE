@@ -15,7 +15,8 @@
 PyTTE (pronounced \emph{pie-tee-tee-ee}) is a Python package for solving X-ray diffraction curves of bent crystals in reflection and transmission geometries. The computation of the diffraction curves is based on the numerical integration of 1D Takagi-Taupin equation (TTE) which is derived from a more general Takagi-Taupin theory describing the propagation of electromagnetic waves in a (quasi)periodic medium. Both energy and angle scans are supported.
 This document describes the theoretical basis behind PyTTE.
 
-\section{Takagi-Taupin equation}
+\section{Takagi-Taupin theory}
+\subsection{1D Takagi-Taupin equation}
 In the typical two-beam case where the incident wave is written as $\mathbf{D}_0(\mathbf{r}) \exp(i \mathbf{k}_0 \cdot \mathbf{r})$ and the diffracted wave as $\mathbf{D}_h(\mathbf{r}) \exp(i \mathbf{k}_h \cdot \mathbf{r} - i \mathbf{h} \cdot \mathbf{u})$, the Takagi-Taupin equations are can be written as
 \begin{subnumcases}{}
 \frac{\partial D_0}{\partial s_0} =  i c_0 D_0 + i c_{\bar{h}} D_h \label{eq:TT_typicala} \\
@@ -48,12 +49,19 @@ where $\gamma_0 = 1/\sin \alpha_0$ and $\gamma_h = 1/\sin \alpha_h$. By defining
 \frac{d \xi}{d z} = i \gamma_0 c_{\bar{h}} \xi^2 + i \left[ (\gamma_0+\gamma_h)c_0 + \gamma_h \beta + \gamma_h \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] \xi + i \gamma_h c_h
 \label{eq:xi}
 \end{equation}
-
-In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of the crystal with thickness $t$ can be solved by integrating Equation~\eqref{eq:xi} from the bottom of the crystal $z=-t$ to the top surface $z=0$. The initial condition is set $\xi(-t)=0$. The reflectivity, which is defined in the terms of integrated intensity, is then computed $R = \gamma_0/\gamma_h|\xi(0)|^2$ where $\gamma_0/\gamma_h$ takes care of different footprint sizes in the asymmetric case. Using the solved $\xi$ and Equation~\eqref{eq:TT_b}, the transmission $T=|D_0(-t)/D_0(0)|^2$ can be then solved from
+When $\xi$ is known, the incident wave can be then solved from Eq.~\eqref{eq:TT_b} as follows
 \begin{equation}
-\frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
+\frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0.
+\label{eq:D0}
 \end{equation}
-by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\subsection{Solving the TT-equation in the reflection and transmission geometries}
+
+In the transmission geometry (Laue case), Eqs.~\eqref{eq:xi} and \eqref{eq:D0} are solved simultaneously by integrating them from the top of the crystal $z=0$ to the bottom $z=-t$. The initial conditions are $\xi(0) = 0$ and $D_0(0)=1$. In the reflection geometry (Bragg case), $\xi$ is solved by integrating from the bottom of the crystal $z = -t$ to the top $z = 0$ with the initial condition $\xi(-t) = 0$. Like in the Laue case, the transmitted beam would have to be integrated from top to bottom, which would require a separate run after $\xi$ is solved and increase the total solving time. Since $D_0$ is rarely needed in the Bragg case, its calculation is not implemented in the version 1.0.
+
+The reflectivity $R$ in the Bragg case is then obtained by $R=|\xi(0)|^2$. However, it should be noted that this definition takes only account the intensities of the beam. From an experimental viewpoint, detectors often record the photon flux which also proportional to the cross-sectional area of the beam. In terms of the photon flux, the reflectivity is $R_\Phi = |\xi(0)|^2 \gamma_0/\gamma_h$. For a symmetric reflection $R=R_\Phi$. (For transmission $T = T_\Phi = |D_0(-t)/D_0(0)|^2$ always.) Similarly in the Laue case the transmission $T$ and the forward-diffractivity $R$ in terms of intensities are given by $T = |D_0(-t)/D_0(0)|^2$ and $R = |D_h(-t)/D_0(0)|^2 = |\xi(-t)D_0(-t)/D_0(0)|^2$ and in terms of photon fluxes $T_\Phi = T = |D_0(-t)/D_0(0)|^2$ and $R_\Phi = |\xi(-t)D_0(-t)/D_0(0)|^2  \gamma_0/|\gamma_h|$. The keyword \texttt{output} of \texttt{TTscan} controls whether the solution is given in terms of intensities or photon fluxes.
+
+Eqs.~\eqref{eq:xi} and \eqref{eq:D0} are solved numerically using the variable-coeffient ordinary differential equation solver (VODE) with backward differential formula (BDF) method \cite{Brown_1989} as implemented in \textsc{SciPy}. Analytically calculated Jacobians are provided for the solver.
 
 \subsection{Susceptibilities and structure factors}
 In linear media, the susceptibility $\chi$ is related to the dielectric constant $\epsilon$ by $\epsilon = \epsilon_0 (1 + \chi)$ where $\epsilon_0$ is the vacuum permittivity  \cite{del_Coso_2004}. Since $\chi$ is small, the complex refractive index is thus $n = \sqrt{\epsilon} \approx 1 + \chi/2$. The connection between the refractive index and the atomic form factor is \cite{Chantler_1995}
