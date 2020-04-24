@@ -90,7 +90,8 @@ class TTscan:
 
             #check and parse parameters
             for line in lines:
-                if not line[0] == '#':  #skip comments
+                line = line.strip()
+                if len(line) > 0 and not line[0] == '#':  #skip empty and comment lines
                     ls = line.split() 
                     if ls[0] == 'constant' and len(ls) == 3:
                         kwargs['constant'] = Quantity(float(ls[1]),ls[2])

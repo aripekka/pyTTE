@@ -132,7 +132,8 @@ class TTcrystal:
 
             #check and parse parameters
             for line in lines:
-                if not line[0] == '#':  #skip comment lines
+                line = line.strip()
+                if len(line) > 0 and not line[0] == '#':  #skip empty and comment lines
                     ls = line.split() 
                     if ls[0] == 'crystal' and len(ls) == 2:
                         kwargs['crystal'] = ls[1]
