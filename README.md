@@ -1,8 +1,10 @@
-# pyTTE
-Package to calculate diffraction curves of deformed crystals by numerically integrating the Takagi-Taupin equations
+# pyTTE v.1.0
+Package to calculate diffraction curves of deformed crystals by numerically integrating the 1D Takagi-Taupin equation.
 
 ### Requirements
-In addition to `numpy`, `scipy`, and `matplotlib`, PyTTE requires `xraylib` https://github.com/tschoonj/xraylib
+PyTTE works on both Python 3 and Python 2. However, Python 2 support is not guaranteed on future versions. 
+
+For crystallographic data and structure factor calculations PyTTE uses `xraylib` whose installing instructions are found at https://github.com/tschoonj/xraylib. PyTTE is developed and tested on version 4.0.0. In addition, `numpy` (>=1.16.6), `scipy`(>=1.2.1), `multiprocess` (>=0.70.9) and `matplotlib` (>=2.2.3) are required. Contents of testing environments are provided in the repository.
 
 ### Installation
 
@@ -12,7 +14,9 @@ PyTTE can be installed using `pip` (NB: v 1.0 is not yet in PyPI):
 pip install pyTTE
 ```
 
-Alternatively, the PyTTE works also directly by copying the PyTTE folder to the working directory.
+Note that `xraylib` can not be installed via pip.
+
+Alternatively, the PyTTE works also directly by copying the PyTTE folder to the working directory if the requirements are met.
 
 ### Example of use
 
@@ -36,4 +40,4 @@ plt.show()
 
 The code differentiates between the Bragg and Laue cases on the basis of the exit angle of the diffracted beam which, on the other hand, is dictated by the Bragg angle and the asymmetry. To change the previous example to Laue geometry, give `asymmetry = Quantity(90,'deg')` when initializing `TTcrystal`.
 
-Comprehensive instructions are presented in the docstrings of TTcrystal, TTscan and TakagiTaupin and in the Jupyter notebooks in `examples/`.
+Comprehensive instructions are presented in the docstrings of `TTcrystal`, `TTscan` and `TakagiTaupin` and in the Jupyter notebooks in `examples/`.
