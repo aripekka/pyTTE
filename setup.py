@@ -21,6 +21,7 @@ setup(name='pyTTE',
       install_requires=[
                         'numpy',
                         'scipy',
+                        'multiprocess',
                         'matplotlib'
                        ],
       include_package_data=True,
