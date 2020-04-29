@@ -585,7 +585,7 @@ class TTcrystal:
         #Apply rotations of the crystal to the elastic matrix
         if self.deformation_model[0] == 'anisotropic':
             self.S = Quantity(rotate_elastic_matrix(self.S0.value, 'S', Rmatrix), 
-                              Quantity._unit2str(self.S0.unit))
+                              self.S0.units())
         
         #calculate the depth-dependent deformation jacobian
         if self.deformation_model[0] == 'custom':

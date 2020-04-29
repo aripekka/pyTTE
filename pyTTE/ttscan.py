@@ -196,7 +196,7 @@ class TTscan:
             N_points = self.scan[1].value.size
             limit_str = 'manual from ' + str(self.scan[1].value.min()) \
                         + ' to ' + str(self.scan[1].value.max()) + ' ' \
-                        + Quantity._unit2str(self.scan[1].unit)
+                        + self.scan[1].units()
         else:
             N_points = self.scan[1]
             limit_str = 'automatic'

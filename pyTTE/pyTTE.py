@@ -593,9 +593,9 @@ class TakagiTaupin:
         if self.solution['geometry'] == 'bragg':
             plt.plot(self.solution['scan'].value, self.solution['reflectivity'])
             if Quantity._type2str(self.solution['scan'].unit) == 'energy':
-                plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+                plt.xlabel('Energy (' + self.solution['scan'].units() + ')')
             else:
-                plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+                plt.xlabel('Angle (' + self.solution['scan'].units() + ')')
 
             if self.solution['output_type'] == 'photon_flux':
                 plt.ylabel('Reflectivity in terms of photon flux')
@@ -608,9 +608,9 @@ class TakagiTaupin:
             plt.plot(self.solution['scan'].value, self.solution['diffraction'],label = 'Diffraction')
 
             if Quantity._type2str(self.solution['scan'].unit) == 'energy':
-                plt.xlabel('Energy (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+                plt.xlabel('Energy (' + self.solution['scan'].units() + ')')
             else:
-                plt.xlabel('Angle (' + Quantity._unit2str(self.solution['scan'].unit) + ')')
+                plt.xlabel('Angle (' + self.solution['scan'].units() + ')')
 
             if self.solution['output_type'] == 'photon_flux':
                 plt.ylabel('Photon flux w.r.t incident')
@@ -665,7 +665,7 @@ class TakagiTaupin:
                      + '-----------------\n' + self.solution['solver_output_log'] + '\n'
 
             header = header + 'SOLUTION\n' + '--------\n' 
-            header = header + 'Scan (' + Quantity._unit2str(self.solution['scan'].unit) + ') '
+            header = header + 'Scan (' + self.solution['scan'].units() + ') '
 
             if self.solution['geometry'] == 'bragg':
                 header =  header + 'Reflectivity'                

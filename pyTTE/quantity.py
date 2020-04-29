@@ -213,6 +213,12 @@ class Quantity:
         value = self.value*convf
         return value
 
+    def units(self):
+        '''
+        Returns the string presentation of units
+        '''
+        return Quantity._unit2str(self.unit)
+
     def type(self):
         '''
         Returns the str of the type of the quantity. 
