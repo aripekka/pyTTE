@@ -225,6 +225,8 @@ class Quantity:
         '''
         return Quantity(self.value, Quantity._unit2str(self.unit))
 
+    @staticmethod
+
     def _parse_units(unit_string):
         '''
         Parses the compounded unit string into basic units.
@@ -267,6 +269,8 @@ class Quantity:
                 del units['1']
 
         return units
+
+    @staticmethod
     
     def _unit2str(unit):
 
@@ -284,6 +288,8 @@ class Quantity:
                 unit_str = unit_str +'^'+str(unit[k])+' '
 
         return unit_str[:-1]
+
+    @staticmethod
 
     def _type2str(unit):
 
