@@ -103,8 +103,53 @@ class TTcrystal:
         the plate is bent by two orthogonal torques acting about x- and y-axes, 
         if 'shape' then the main axes of curvature are assumed to be along x 
         and y (and given by Rx and Ry).
-        
-        
+
+
+    Attributes
+    ----------
+
+    crystal_data : dict
+    
+    hkl : 3 element list of ints
+
+    direct_primitives : 3x3 numpy array of direct unit vectors in angstroms 
+    
+    reciprocal_primitives : 3x3 numpy array of reciprocal unit vectors in 1/angstroms 
+
+    thickness : Quantity of type length
+
+    asymmetry : Quantity of type angle
+    
+    in_plane_rotation : Quantity of type angle
+    
+    debye_waller : float
+    
+    isotropy : 'isotropic' or 'ansotropic'
+
+    E  : Quantity of type pressure (present if isotropy == 'isotropic')
+    
+    nu : float (present if isotropy == 'isotropic')
+
+    S0 : 6x6 Numpy array of the compliance matrix before any rotations (crystal 
+         directions as in direct_primitives, present if isotropy == 'anisotropic')  
+
+    S : 6x6 Numpy array of the compliance matrix after applying the rotations 
+        (hkl, asymmetry, in_plane_rotation) 
+
+    deformation_model : list
+        Either ['isotropic'], ['anisotropic', 'fixed_shape'], 
+        ['anisotropic', 'fixed_torques'], or ['custom', jacobian], where 
+        jacobian is a function returning the Jacobian of the displacement
+        vector [ux, uz].
+    
+    fix_to_axes : 'shape' or 'torques'
+
+    crystal_directions : 3 x 3 Numpy array, whose columns give the crystal 
+                        directions along the Cartesian axes after rotations.
+    
+    displacement_jacobian : function returning the partial derivatives of the 
+                            displacement vector u as a function of (x,z)
+       
     - See the technical documentation in docs for more details. -
     '''
 
