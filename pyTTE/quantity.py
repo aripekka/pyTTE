@@ -229,7 +229,7 @@ class Quantity:
         '''
         Returns the copy of the instance
         '''
-        return Quantity(self.value, Quantity._unit2str(self.unit))
+        return Quantity(self.value.copy(), Quantity._unit2str(self.unit))
 
     @staticmethod
 
