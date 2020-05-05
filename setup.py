@@ -22,7 +22,7 @@ setup(name='pyTTE',
                         'numpy>=1.16.6',
                         'scipy>=1.2.1',
                         'multiprocess>=0.70.9',
-                        'matplotlib>=2.2.3'
+                        'matplotlib>=2.2.3',
                        ],
       include_package_data=True,
 )
