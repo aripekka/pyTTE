@@ -107,3 +107,16 @@ def test_input_set_correctly():
     assert xtal.hkl[2] == 3
     assert xtal.thickness.value == 100
     
+def test_changing_parameters():
+    xtal = TTcrystal(crystal='Si', hkl=[1,-2,3], thickness=Quantity(100,'um'))
+    
+    xtal.set_crystal('Ge')
+    assert xtal.crystal_data['name'] == 'Ge'
+
+    xtal.set_reflection([6,6,0])
+    assert xtal.hkl[0] == 6
+    assert xtal.hkl[1] == 6
+    assert xtal.hkl[2] == 0
+
+    xtal.set_thickness(Quantity(500,'um'))
+    assert xtal.thickness.value == 500
