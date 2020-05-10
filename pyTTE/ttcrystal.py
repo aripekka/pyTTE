@@ -124,7 +124,7 @@ class TTcrystal:
     
     debye_waller : float
     
-    isotropy : 'isotropic' or 'ansotropic'
+    isotropy : 'isotropic' or 'anisotropic'
 
     E  : Quantity of type pressure (present if isotropy == 'isotropic')
     
