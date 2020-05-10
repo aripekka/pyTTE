@@ -554,6 +554,8 @@ class TakagiTaupin:
 
             self.solution = {'scan' : scan,
                              'beta' : beta,
+                             'bragg_energy' : energy_bragg,
+                             'bragg_angle'  : theta_bragg,                             
                              'geometry' : 'bragg', 
                              'reflectivity' : reflectivity, 
                              'transmission': transmission,
@@ -570,6 +572,8 @@ class TakagiTaupin:
 
             self.solution = {'scan' : scan, 
                              'beta' : beta,
+                             'bragg_energy' : energy_bragg,
+                             'bragg_angle'  : theta_bragg,
                              'geometry' : 'laue', 
                              'diffraction' : diffraction, 
                              'forward_diffraction': forward_diffraction,
