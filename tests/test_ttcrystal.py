@@ -120,3 +120,35 @@ def test_changing_parameters():
 
     xtal.set_thickness(Quantity(500,'um'))
     assert xtal.thickness.value == 500
+
+def test_bragg_energy_and_bragg_angle():
+
+    xtal = TTcrystal(crystal='Si', hkl=[6,6,0], thickness=Quantity(100,'um'))
+    
+    #Check that the functions are invertible
+    energy = Quantity(np.array([10,20,100]), 'keV')
+    angle  = Quantity(np.array([90,75,25]), 'deg')
+    
+    meps = np.finfo(np.float).eps #machine epsilon
+    meps = meps*2 #There is apparently some accumulation in numerical errors why the inversion is not inside the machine epsilon
+    
+    assert np.all(np.abs(xtal.bragg_energy(xtal.bragg_angle(energy)).in_units('keV') - energy.in_units('keV'))/energy.in_units('keV') < meps)
+    assert np.all(np.abs(xtal.bragg_angle(xtal.bragg_energy(angle)).in_units('deg') - angle.in_units('deg'))/angle.in_units('deg') < meps)
+    
+    #invalid inputs
+    wrong_angle  = [Quantity(-1, 'deg'),Quantity(190, 'deg'),Quantity(80, 'keV')]
+    wrong_energy = [Quantity(-1, 'keV'),Quantity(0.1, 'keV'),Quantity(80, 'deg')]
+    
+    for wa in wrong_angle:
+        try:
+            xtal.bragg_energy(wa)
+            assert False
+        except (TypeError, ValueError):
+            pass
+
+    for we in wrong_energy:
+        try:
+            xtal.bragg_angle(we)
+            assert False
+        except (TypeError, ValueError):
+            pass
