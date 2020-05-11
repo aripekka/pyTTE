@@ -618,6 +618,9 @@ class TTcrystal:
 
         if not (isinstance(bragg_angle, Quantity) and bragg_angle.type() == 'angle'):        
             raise TypeError('bragg_angle has to be an instance of Quantity of type angle!')
+
+        if np.any(bragg_angle.in_units('deg') <= 0) or np.any(bragg_angle.in_units('deg') >= 180):
+            raise ValueError('bragg_angle has to be in range (0,180) deg!')
             
         #d-spacing of the reflection
         d = Quantity(xraylib.Crystal_dSpacing(self.crystal_data,*self.hkl),'A')
@@ -625,6 +628,42 @@ class TTcrystal:
         wavelength = 2*d*np.sin(bragg_angle.in_units('rad'))
 
         return Quantity((HC_CONST/wavelength).in_units('keV'), 'keV')
+
+    def bragg_angle(self, bragg_energy):
+        '''
+        Returns the Bragg angle corresponding to the energy of incident photons.
+
+        Parameters
+        ----------
+        bragg_energy : Quantity of type angle
+            The energy of incident photons. 
+
+        Returns
+        -------
+        bragg_angle : Quantity of type energy
+            The angle between the incident beam and the diffracting planes 
+            fulfilling the kinematical diffraction condition.
+        '''
+
+        if not (isinstance(bragg_energy, Quantity) and bragg_energy.type() == 'energy'):        
+            raise TypeError('bragg_energy has to be an instance of Quantity of type energy!')
+
+        if np.any(bragg_energy.in_units('keV') < 0):
+            raise ValueError('bragg_energy has to be non-negative!')
+            
+        #d-spacing of the reflection
+        d = Quantity(xraylib.Crystal_dSpacing(self.crystal_data,*self.hkl),'A')
+
+        wavelength = HC_CONST/bragg_energy
+
+        sin_th = (wavelength/(2*d)).in_units('1')
+
+        if np.any(sin_th > 1):
+            backscatter_energy = (HC_CONST/2*d).in_units('keV')
+            raise ValueError('bragg_energy below the backscattering energy '
+                             + str(backscatter_energy) + ' keV!')
+                    
+        return Quantity(np.degrees(np.arcsin(sin_th)), 'deg')
 
     def update_rotations_and_deformation(self):
         '''
