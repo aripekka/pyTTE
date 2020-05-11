@@ -659,7 +659,7 @@ class TTcrystal:
         sin_th = (wavelength/(2*d)).in_units('1')
 
         if np.any(sin_th > 1):
-            backscatter_energy = (HC_CONST/2*d).in_units('keV')
+            backscatter_energy = (HC_CONST/(2*d)).in_units('keV')
             raise ValueError('bragg_energy below the backscattering energy '
                              + str(backscatter_energy) + ' keV!')
                     
