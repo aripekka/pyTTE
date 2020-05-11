@@ -8,6 +8,9 @@ from .rotation_matrix import rotate_asymmetry, align_vector_with_z_axis, inplane
 import numpy as np
 import xraylib
 
+
+HC_CONST  = Quantity(1.23984193,'eV um') #Planck's constant * speed of light
+
 class TTcrystal:
     '''
     Contains all the information about the crystal and its depth-dependent 
@@ -597,6 +600,31 @@ class TTcrystal:
         if not skip_update:
             self.set_bending_radii(self.Rx, self.Ry, skip_update = True)
             self.update_rotations_and_deformation()
+
+    def bragg_energy(self, bragg_angle):
+        '''
+        Returns the energy of the photons corresponding to the given Bragg angle.
+
+        Parameters
+        ----------
+        bragg_angle : Quantity of type angle
+            Angle between the incident beam and the diffraction planes. 
+
+        Returns
+        -------
+        bragg_energy : Quantity of type energy
+            The energy of photons fulfilling the kinematical diffraction condition.
+        '''
+
+        if not (isinstance(bragg_angle, Quantity) and bragg_angle.type() == 'angle'):        
+            raise TypeError('bragg_angle has to be an instance of Quantity of type angle!')
+            
+        #d-spacing of the reflection
+        d = Quantity(xraylib.Crystal_dSpacing(self.crystal_data,*self.hkl),'A')
+
+        wavelength = 2*d*np.sin(bragg_angle.in_units('rad'))
+
+        return Quantity((HC_CONST/wavelength).in_units('keV'), 'keV')
 
     def update_rotations_and_deformation(self):
         '''
