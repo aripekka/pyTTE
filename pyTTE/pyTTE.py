@@ -12,25 +12,86 @@ import sys
 
 class TakagiTaupin:
 
+    '''
+    The main class of the pyTTE package to calculate the 1D Takagi-Taupin curves
+    of bent crystals.
+
+    Parameters
+    ----------
+        TTcrystal_object : TTcrystal or str
+            An existing TTcrystal instance for crystal parameters or a path to 
+            a file where they are defined. For any other types the crystal 
+            parameters are not set.
+
+        TTscan_object : TTscan or str 
+            An existing TTscan instance for scan parameters or a path to a file 
+            where they are defined. For any other types the scan parameters are 
+            not set.
+
+    Attributes
+    ----------
+        crystal_object : TTcrystal
+            Contains the crystal and deformation parameters
+
+        scan_object : TTscan
+            Contains the scan parameters and the solver settings
+
+        solution : dict
+            Stores the result of the TakagiTaupin.run(). Has the following keys:
+
+                scan : Quantity of type energy or angle  
+                    The scanned energy or angle points.
+
+                beta : Numpy array
+                    The scanned points given in terms of deviation from the
+                    kinematical Bragg condition i.e. 
+                        beta = h*(sin theta - lambda/2*d_h)
+
+                bragg_energy : Quantity of type energy
+                    Energy of incident photons at beta = 0
+                
+                bragg_angle : Quantity of type angle
+                    Angle between the incident beam and the diffraction planes
+                    at beta = 0
+                
+                geometry : str
+                    Either 'bragg' for reflection geometry or 'laue' for 
+                    transmission geometry
+                
+                reflectivity : Numpy array (present if geometry == 'bragg')
+                    The reflectivity of the crystal for each scan point.
+
+                transmission : Numpy array (present if geometry == 'bragg')
+                    The transmission though the crystal for each scan point
+
+                diffraction : Numpy array (present if geometry == 'laue')
+                    The diffracted beam for each scan point
+
+                forward_diffraction : Numpy array (present if geometry == 'laue')
+                    The forward diffracted (transmitted beam) for each scan point.
+
+                output_type : str
+                    'intensity' if output reflectivity/diffractivity/transmission 
+                    are given in terms of wave intensities or 'photon_flux' if 
+                    in terms of photon fluxes. 
+
+                crystal_parameters : str
+                    String representation of self.crystal_object
+
+                scan_parameters : str
+                    String representation of self.scan_object
+                    
+                solver_output_log : str
+                    Logged stdout output of self.run().
+
+    '''    
+
+
     ##############################
     # Methods for initialization #
     ##############################    
 
     def __init__(self, TTcrystal_object = None, TTscan_object = None):
-        '''
-        Initialize the TakagiTaupin instance.
-
-
-        Input:
-            TTcrystal_object = An existing TTcrystal instance for crystal 
-                               parameters or a path to a file where they are 
-                               defined. For any other types the crystal 
-                               parameters are not set.
-            
-            TTscan_object    = An existing TTscan instance for scan parameters 
-                               or a path to a file where they are defined.
-                               For any other types the scan parameters are not set.
-        '''
 
         self.crystal_object = None
         self.scan_object    = None
@@ -38,7 +99,6 @@ class TakagiTaupin:
 
         self.set_crystal(TTcrystal_object)
         self.set_scan(TTscan_object)
-
 
 
     def set_crystal(self, TTcrystal_object):
