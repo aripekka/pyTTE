@@ -106,12 +106,13 @@ class TakagiTaupin:
         Sets the crystal parameters for the scan instance. Any existing solutions
         are cleared.
 
-        Input:
-            TTcrystal_object = An existing TTcrystal instance for crystal 
-                               parameters or a path to a file where they are 
-                               defined. For any other types the crystal 
-                               parameters are not set and the solution is not
-                               cleared.
+        Parameters
+        ----------
+        
+        TTcrystal_object : TTcrystal or str
+            An existing TTcrystal instance for crystal parameters or a path to 
+            a file where they are defined. For any other types the crystal 
+            parameters are not set and the solution is not cleared.
         '''
 
         if isinstance(TTcrystal_object, TTcrystal): 
@@ -134,11 +135,13 @@ class TakagiTaupin:
         Sets the crystal parameters for the scan instance. Any existing solutions
         are cleared.
 
-        Input:
-            TTscan_object    = An existing TTscan instance for scan parameters 
-                               or a path to a file where they are defined. For 
-                               any other types the scan parameters are not set
-                               and the solution is not cleared.
+        Parameters
+        ----------
+        
+        TTscan_object : TTscan or str
+            An existing TTscan instance for scan parameters or a path to a file 
+            where they are defined. For any other types the scan parameters are 
+            not set and the solution is not cleared.
         '''
 
         if isinstance(TTscan_object, TTscan):
@@ -164,11 +167,20 @@ class TakagiTaupin:
         '''
         Calculates the structure factors F_0 F_h and F_bar{h}.
         
-        Input:
-            crystal = a dictionary returned by xraylib's Crystal_GetCrystal()
-            hkl = 3 element list containing the Miller indeces of the reflection
-            energy = Quantity instance of type energy. May be a single number or an array
-            debye_waller = The Debye-Waller factor
+        Parameters
+        ----------
+        
+        crystal : dict
+            Dictionary returned by xraylib's Crystal_GetCrystal()
+
+        hkl : list of ints
+            3 element list containing the Miller indeces of the reflection
+            
+        energy : Quantity instance of type energy.
+            Energy of photons. energy.values be a single number or an array
+
+        debye_waller : float
+            The Debye-Waller factor
         '''
 
         energy_in_keV = energy.in_units('keV')
@@ -190,6 +202,32 @@ class TakagiTaupin:
 
 
     def run(self):
+        '''
+        Calculates the 1D Takagi-Taupin curve for given TTcrystal and TTscan
+        given to the instance
+
+        Returns
+        -------
+
+        #In the Bragg (reflection) geometry#
+
+        scan.value : 1D Numpy array
+                    
+        reflectivity : 1D Numpy array
+            
+        transmission : 1D Numpy array
+        
+        
+        #In the Laue (transmission) geometry#
+
+        scan.value : 1D Numpy array
+            
+        diffraction : 1D Numpy array
+        
+        forward_diffraction : 1D Numpy array
+
+        '''
+        
 
         #Check that the required scan parameters are in place
         if self.crystal_object is None:
