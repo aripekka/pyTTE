@@ -204,7 +204,7 @@ class TakagiTaupin:
     def run(self):
         '''
         Calculates the 1D Takagi-Taupin curve for given TTcrystal and TTscan
-        given to the instance
+        given to the instance. Stores the result and metadata in self.solution.
 
         Returns
         -------
