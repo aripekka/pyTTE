@@ -726,7 +726,7 @@ class TakagiTaupin:
 
     def save(self, path, include_header = True):
         '''
-        Saves the solution in to a file.
+        Saves the solution to a file.
         
         Parameters
         ----------
