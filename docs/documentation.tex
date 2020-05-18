@@ -8,15 +8,16 @@
 
 
 \author{Ari-Pekka Honkanen}
-\title{PyTTE: The Technical Document}
+\title{PyTTE: The Technical Document\\Version 1.0}
 \begin{document}
 \maketitle
 \section{Introduction}
 PyTTE (pronounced \emph{pie-tee-tee-ee}) is a Python package for solving X-ray diffraction curves of bent crystals in reflection and transmission geometries. The computation of the diffraction curves is based on the numerical integration of 1D Takagi-Taupin equation (TTE) which is derived from a more general Takagi-Taupin theory describing the propagation of electromagnetic waves in a (quasi)periodic medium. Both energy and angle scans are supported.
 This document describes the theoretical basis behind PyTTE.
 
-\section{Takagi-Taupin equation}
-In the typical two-beam case, the Takagi-Taupin equations are can be written as
+\section{Takagi-Taupin theory}
+\subsection{1D Takagi-Taupin equation}
+In the typical two-beam case where the incident wave is written as $\mathbf{D}_0(\mathbf{r}) \exp(i \mathbf{k}_0 \cdot \mathbf{r})$ and the diffracted wave as $\mathbf{D}_h(\mathbf{r}) \exp(i \mathbf{k}_h \cdot \mathbf{r} - i \mathbf{h} \cdot \mathbf{u})$, the Takagi-Taupin equations are can be written as
 \begin{subnumcases}{}
 \frac{\partial D_0}{\partial s_0} =  i c_0 D_0 + i c_{\bar{h}} D_h \label{eq:TT_typicala} \\
 \frac{\partial D_h}{\partial s_h} =  i \left(c_0 + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h}  \right) D_h
@@ -28,9 +29,10 @@ c_0 = \frac{k \chi_0}{2} \qquad c_{h,\bar{h}} = \frac{k C \chi_{h,\bar{h}}}{2},
 \end{equation} 
 where $k=2 \pi/\lambda$ and $C = 1$ for $\sigma$-polarization and $\cos 2 \theta_B$ for $\pi$-polarization. The deviation parameter $\beta = (k_h^2 - k_0^2)/2k_h$ is quite often approximated by $\beta \approx k \Delta \theta \sin 2 \theta_B$, where $\Delta \theta$ is the deviation from the Bragg angle. However, since this approximation ceases to be valid near the backscattering condition, PyTTE uses a more general form
 \begin{equation}
-\beta = \frac{2 \pi}{d_h}\left(\frac{\lambda}{2 d_h}-\sin \theta \right) = h \left(\frac{\lambda}{2 d_h}-\sin \theta \right),
+\beta = \frac{2 \pi}{d_h}\left(\sin \theta - \frac{\lambda}{2 d_h}\right) = h \left(\sin \theta - \frac{\lambda}{2 d_h}\right),
+\label{eq:beta}
 \end{equation}
-where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes.
+where $d_h$ is the interplanar separation of the diffractive planes corresponding to the reciprocal vector $\mathbf{h}$ and $\theta$ is the incidence angle relative to the aforementioned planes. To avoid the possibility of catastrophic cancellation, the subtraction is performed explicitly with 64 bit floating point numbers.
 
 %THIS PARAGRAPH NEEDS A FIGURE
 The partial derivatives with respect to $s_0$ and $s_h$ can be written in Cartesian coordinates as
@@ -47,12 +49,83 @@ where $\gamma_0 = 1/\sin \alpha_0$ and $\gamma_h = 1/\sin \alpha_h$. By defining
 \frac{d \xi}{d z} = i \gamma_0 c_{\bar{h}} \xi^2 + i \left[ (\gamma_0+\gamma_h)c_0 + \gamma_h \beta + \gamma_h \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] \xi + i \gamma_h c_h
 \label{eq:xi}
 \end{equation}
-
-In the reflection geometry (\emph{i.e.} the Bragg case), the reflectivity $R$ of the crystal with thickness $t$ can be solved by integrating Equation~\eqref{eq:xi} from the bottom of the crystal $z=-t$ to the top surface $z=0$. The initial condition is set $\xi(-t)=0$. The reflectivity, which is defined in the terms of integrated intensity, is then computed $R = \gamma_0/\gamma_h|\xi(0)|^2$ where $\gamma_0/\gamma_h$ takes care of different footprint sizes in the asymmetric case. Using the solved $\xi$ and Equation~\eqref{eq:TT_b}, the transmission $T=|D_0(-t)/D_0(0)|^2$ can be then solved from
+When $\xi$ is known, the incident wave can be then solved from Eq.~\eqref{eq:TT_b} as follows
 \begin{equation}
-\frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0
+\frac{d D_0}{d z} =  - i \left( \gamma_0 c_0  + \gamma_0 c_{\bar{h}} \xi \right) D_0.
+\label{eq:D0}
 \end{equation}
-by integrating from $z=0$ to $z=-t$. The transmission geometry (the Laue case) is more straightforward, as the ODEs for $\xi$ and $D_0$ can be integrated simultaneously from $z=0$ to $z=-t$. With the initial conditions are set $\xi(0) = 0$ and $D_0(0)=1$, the forward-diffracted intensity at the exit surface is $|D_0(-t)|^2$ and the diffracted intensity is $|D_h(-t)|^2=|\xi(-t)D_0(-t)|^2$.
+
+\subsection{Solving the TT-equation in the reflection and transmission geometries}
+
+In the transmission geometry (Laue case), Eqs.~\eqref{eq:xi} and \eqref{eq:D0} are solved simultaneously by integrating them from the top of the crystal $z=0$ to the bottom $z=-t$. The initial conditions are $\xi(0) = 0$ and $D_0(0)=1$. In the reflection geometry (Bragg case), $\xi$ is solved by integrating from the bottom of the crystal $z = -t$ to the top $z = 0$ with the initial condition $\xi(-t) = 0$. Like in the Laue case, the transmitted beam would have to be integrated from top to bottom, which would require a separate run after $\xi$ is solved and increase the total solving time. Since $D_0$ is rarely needed in the Bragg case, its calculation is not implemented in the version 1.0.
+
+The reflectivity $R$ in the Bragg case is then obtained by $R=|\xi(0)|^2$. However, it should be noted that this definition takes only account the intensities of the beam. From an experimental viewpoint, detectors often record the photon flux which also proportional to the cross-sectional area of the beam. In terms of the photon flux, the reflectivity is $R_\Phi = |\xi(0)|^2 \gamma_0/\gamma_h$. For a symmetric reflection $R=R_\Phi$. (For transmission $T = T_\Phi = |D_0(-t)/D_0(0)|^2$ always.) Similarly in the Laue case the transmission (or forward-diffractivity) $T$ and the diffractivity $R$ in terms of intensities are given by $T = |D_0(-t)/D_0(0)|^2$ and $R = |D_h(-t)/D_0(0)|^2 = |\xi(-t)D_0(-t)/D_0(0)|^2$ and in terms of photon fluxes $T_\Phi = T = |D_0(-t)/D_0(0)|^2$ and $R_\Phi = |\xi(-t)D_0(-t)/D_0(0)|^2  \gamma_0/|\gamma_h|$. The keyword \texttt{output\_type} of \texttt{TTscan} controls whether the solution is given in terms of intensities or photon fluxes.
+
+Eqs.~\eqref{eq:xi} and \eqref{eq:D0} are solved numerically using the variable-coeffient ordinary differential equation solver (VODE) with backward differential formula (BDF) method \cite{Brown_1989} as implemented in \textsc{SciPy}. Analytically calculated Jacobians are provided for the solver.
+
+\subsection{Susceptibilities and structure factors}
+In linear media, the susceptibility $\chi$ is related to the dielectric constant $\epsilon$ by $\epsilon = \epsilon_0 (1 + \chi)$ where $\epsilon_0$ is the vacuum permittivity  \cite{del_Coso_2004}. Since $\chi$ is small, the complex refractive index is thus $n = \sqrt{\epsilon} \approx 1 + \chi/2$. The connection between the refractive index and the atomic form factor is \cite{Chantler_1995}
+\begin{equation}
+n = 1 - \frac{r_0 \lambda^2}{2 \pi} \sum_j n_j f_j
+\end{equation}
+where $r_0$ is the classical electron radius, $n_j$ and $f_j$ are the number density and the form factor of atomic species $j$, respectively. For crystalline matter, the phase factor and the Debye-Waller factors are included in the sum
+\begin{equation}
+\chi(\mathbf{q}) =  - \frac{r_0 \lambda^2}{\pi V} \sum_{i} e^{i \mathbf{q} \cdot \mathbf{R}_i}  \sum_j f_j(\mathbf{q})  e^{i \mathbf{q} \cdot \mathbf{r}_j}  e^{-\tfrac{1}{2}q^2 \langle u_j^2 \rangle}
+\end{equation}
+where $V$ is the volume of the crystal. The first sum goes over all the lattice points $i$, and the second one the atoms in the unit cell. The Fourier coefficients of the series $\chi(\mathbf{r}) = \sum_{\mathbf{h}} \chi_{\mathbf{h}} e^{i\mathbf{h} \cdot \mathbf{r}}$ are thus
+\begin{equation}
+\chi_\mathbf{h} =  - \frac{r_0 \lambda^2}{\pi v}  F_{\mathbf{h}}
+\end{equation}
+where $v$ is the volume of the unit cell, and the crystal structure factor is
+\begin{equation}
+F_{\mathbf{h}} = \sum_j f_j(\mathbf{h})  e^{i \mathbf{h} \cdot \mathbf{r}_j}  e^{-\tfrac{1}{2}h^2 \langle u_j^2 \rangle}.
+\end{equation}
+
+\textsc{PyTTE} uses \texttt{Crystal\_F\_H\_StructureFactor} of \textsc{xraylib} to calculate the structure factors $F_h$. In this case the user given Debye-Waller factor is assumed to be $\exp(-\tfrac{1}{2}h^2 \langle u^2 \rangle)$ which is passed to calculation of $F_h$ and $F_{\bar{h}}$; the Debye-Waller factor is always 1 for $F_0$. Although not explicitely stated, \textsc{xraylib} apparently assumes the form of the Fourier expansion to be $\sum_{\mathbf{h}} \chi_{\mathbf{h}} e^{-i\mathbf{h} \cdot \mathbf{r}}$ due to which the structure factors are complex conjugated in \textsc{PyTTE} before calculating $\chi_{\mathbf{h}}$. According to the \textsc{xraylib} source code and the example files (e.g. \texttt{example/xrlexample1.c}) the input parameter \texttt{rel\_angle} is set to 1.
+
+
+\subsection{Scan vector and refraction correction}
+The scan vector, whether in the energy or angle domain, is given to \textsc{PyTTE} relative to the kinematical diffraction condition $\lambda = 2 d_h \sin \theta$, or equivalently $\beta = 0$. 
+However, it is well-known \cite{Ewald_1986} that due to the refraction of X-rays at the crystal-vacuum interface, the diffraction is not exactly at where the kinematical condition suggests it to be. From Eq.~\eqref{eq:xi} we see, that the true center of the diffraction takes place at $\beta = -(1 + \gamma_0/\gamma_h)\mathrm{Re}[c_0]$. Compared to the kinematical condition, the energy of the centre of the diffraction is changed by
+\begin{equation}
+\frac{\Delta E}{E} = -\left(1 + \frac{\gamma_0}{\gamma_h} \right)\frac{\mathrm{Re}[\chi_0]}{4 \sin^2 \theta}
+\end{equation}
+and the angle by
+\begin{equation} 
+\Delta \theta = -\left(1 + \frac{\gamma_0}{\gamma_h} \right)\frac{\mathrm{Re}[\chi_0]}{4 \sin \theta  \cos \theta}.
+\end{equation}
+The refraction corrections can be applied to the scan vector if needed.
+
+\subsection{Automatic scan limit calculation}
+Locally, the diffraction takes place most efficiently in the crystal when 
+\begin{equation}
+\left(1 + \frac{\gamma_0}{\gamma_h}\right) \mathrm{Re} [c_0]  + \beta + \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} = 0
+\end{equation}
+in Eq.~\eqref{eq:xi}, which is effectively Bragg's law corrected for the refraction and influence of deformation. The scan limits can be thus be calculated by finding the maximum and minimum values for the deformation term inside the crystal and calculating the corresponding $\beta$-range. In addition we have to take into account that every reflection has a finite width and extend the scan range accordingly. According to \cite{stepanov_server}, the Darwin width of a perfect thick crystal in the case of symmetric Bragg reflection is
+\begin{equation}
+\Delta \theta_D = \frac{2 \sqrt{|\chi_h \chi_{\bar{h}}|}}{\sin 2 \theta_B}
+\end{equation}
+except near $\theta_B = \pi/2$ when 
+\begin{equation}
+\Delta \theta_D = \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}.
+\end{equation}
+is more appropriate. For scan limit calculation purposes we combine the two expressions continuously in the following way:
+\begin{equation}
+\Delta \theta_D (\theta_B)  = \begin{dcases}
+\left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2} & \mathrm{when} \quad \sin 2\theta_B \leq \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}\\
+\frac{2 \sqrt{|\chi_h \chi_{\bar{h}}|}}{\sin 2 \theta_B} & \mathrm{when} \quad \sin 2\theta_B > \left(2 \sqrt{|\chi_h \chi_{\bar{h}}|} \right)^{1/2}
+\end{dcases}
+\end{equation} 
+Substituting this in Eq.~\eqref{eq:beta} and expanding up to the first order, we get
+\begin{equation}
+|\Delta \beta| = \sigma h \Delta \theta_D (\theta_B) \cos \theta_B,
+\end{equation}
+where $\sigma = 2$ is a scaling factor which makes the scan range look nicer especially in the absence of a deformation field. Therefore the scan limits are
+\begin{align}
+\beta_{\mathrm{min}} &= - \frac{k}{2} \left( 1 + \frac{\gamma_0}{\gamma_h} \right) \mathrm{Re}[\chi_0] - \max \left[ \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] - \sigma h \Delta \theta_D (\theta_B) \cos \theta_B \\
+\beta_{\mathrm{max}} &= -\frac{k}{2} \left( 1 + \frac{\gamma_0}{\gamma_h} \right) \mathrm{Re}[\chi_0] - \min \left[  \frac{\partial (\mathbf{h}\cdot\mathbf{u}) }{\partial s_h} \right] +  \sigma h \Delta \theta_D (\theta_B) \cos \theta_B
+\end{align}
+It should be noted, that the limits above do not aim to be perfect but act more like as a suggestion. For example, the Darwin width term used may fall short if the crystal is strongly bent or very thin. Also, the first order expansion of $\beta$ is not accurate in the back-scattering.
 
 \section{Deformation}
 As stated in the previous section, the deformation is introduced through $\partial_h(\mathbf{h}\cdot \mathbf{u})$ term where $\mathbf{u}$ is the displacement vector field. Taking the asymmetry into account, the reciprocal vector is given by $\mathbf{h} = h \sin \varphi \hat{\mathbf{x}} + h \cos \varphi \hat{\mathbf{z}}$. Thus
@@ -62,42 +135,91 @@ As stated in the previous section, the deformation is introduced through $\parti
 Again we write the partial derivatives in terms of $x$ and $z$. In this case, however, neither $x$- or $z$-derivatives can be dropped as they both contain physical information about the rotation and the separation of the diffractive planes. Since the beam propagates also in the $x$-direction, the situation is not strictly speaking one dimensional. However, since the $x$-coordinate is geometrically related to $z$, the problem can be treated as such. Therefore the deformation term becomes
 \begin{equation}
 \frac{\partial (\mathbf{h}\cdot \mathbf{u})}{\partial s_h} = h \left( 
-\sin \varphi \cos \alpha' \frac{\partial u_x}{\partial x} 
-+\sin \varphi \sin \alpha' \frac{\partial u_x}{\partial z} 
-+\cos \varphi \cos \alpha' \frac{\partial u_z}{\partial x} 
-+\cos \varphi \sin \alpha' \frac{\partial u_z}{\partial z} 
+\sin \varphi \cos \alpha_h \frac{\partial u_x}{\partial x} 
++\sin \varphi \sin \alpha_h \frac{\partial u_x}{\partial z} 
++\cos \varphi \cos \alpha_h \frac{\partial u_z}{\partial x} 
++\cos \varphi \sin \alpha_h \frac{\partial u_z}{\partial z} 
  \right),
 \end{equation}
-where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
+where the derivatives, that are functions of $x$ and $z$, are made only $z$-dependent with $x(z)=-z \cot \alpha_0$. PyTTE computes the strain term from the Jacobian of $\mathbf{u}$.
 
-\subsection{Anisotropic plate}
-According to \cite{Sanchez_del_Rio_2015}, the components of the displacement field for an anisotropic plate bent by two (scaled) torques $m_x$ and $m_y$ are
+\subsection{Anisotropic plate, bending due to applied torques}
+According to \cite{Chukhovskii_1994}, the components of the displacement field for an anisotropic plate bent by two (scaled) torques $m_1$ and $m_2$ acting about $y$- and $x$-axes, respectively, are
 \begin{align}
-u_x &= (S_{11} m_x + S_{12} m_y) x z + (S_{51} m_x + S_{52} m_y)\frac{z^2}{2} + (S_{61} m_x +S_{62} m_y) \frac{y z}{2} \\
-u_y &= (S_{21} m_x + S_{22} m_y) y z + (S_{41} m_x + S_{42} m_y)\frac{z^2}{2} + (S_{61} m_x +S_{62} m_y) \frac{x z}{2} \\
-u_z &= -(S_{11} m_x + S_{12} m_y)\frac{x^2}{2} -(S_{21} m_x + S_{22} m_y)\frac{y^2}{2} -(S_{61} m_x +S_{62} m_y) \frac{x y}{2} +(S_{31} m_x + S_{32} m_y)\frac{z^2}{2},
+u_x &= (S_{11} m_1 + S_{12} m_2) x z + (S_{51} m_1 + S_{52} m_2)\frac{z^2}{2} + (S_{61} m_1 +S_{62} m_2) \frac{y z}{2} \\
+u_y &= (S_{21} m_1 + S_{22} m_2) y z + (S_{41} m_1 + S_{42} m_2)\frac{z^2}{2} + (S_{61} m_1 +S_{62} m_2) \frac{x z}{2} \\
+u_z &= -(S_{11} m_1 + S_{12} m_2)\frac{x^2}{2} -(S_{21} m_1 + S_{22} m_2)\frac{y^2}{2} -(S_{61} m_1 +S_{62} m_2) \frac{x y}{2} +(S_{31} m_1 + S_{32} m_2)\frac{z^2}{2},
 \end{align} 
 where $S_{ij}$ are the components of the compliance matrix. Thus we find the partial derivatives:
 \begin{align}
-\frac{\partial u_x}{\partial x} &= (S_{11} m_x + S_{12} m_y) z \\
-\frac{\partial u_x}{\partial z} &= (S_{11} m_x + S_{12} m_y) x + (S_{51} m_x + S_{52} m_y) z 
-+ (S_{61} m_x + S_{62} m_y) \frac{y}{2}\\
-\frac{\partial u_z}{\partial x} &= -(S_{11} m_x + S_{12} m_y) x -(S_{61} m_x + S_{62} m_y) \frac{y}{2} \\
-\frac{\partial u_z}{\partial z} &= (S_{31} m_x + S_{32} m_y) z
+\frac{\partial u_x}{\partial x} &= (S_{11} m_1 + S_{12} m_2) z \\
+\frac{\partial u_x}{\partial z} &= (S_{11} m_1 + S_{12} m_2) x + (S_{51} m_1 + S_{52} m_2) z 
++ (S_{61} m_1 + S_{62} m_2) \frac{y}{2}\\
+\frac{\partial u_z}{\partial x} &= -(S_{11} m_1 + S_{12} m_2) x -(S_{61} m_1 + S_{62} m_2) \frac{y}{2} \\
+\frac{\partial u_z}{\partial z} &= (S_{31} m_1 + S_{32} m_2) z
 \end{align} 
-The torques are related to the bending radii $R_i$ by\footnote{In this work the signs of $R_i$ is the opposite to that of \cite{Sanchez_del_Rio_2015}}
+The torques are related to the bending radii $R_i$ by\footnote{In this work the signs of $R_i$ is the opposite to that of \cite{Chukhovskii_1994}}
 \begin{equation}
-\frac{1}{R_x} = -S_{11} m_x - S_{12} m_y, \qquad
-\frac{1}{R_y} = -S_{21} m_x - S_{22} m_y.
+\frac{1}{R_1} = -S_{11} m_1 - S_{12} m_2, \qquad
+\frac{1}{R_2} = -S_{21} m_1 - S_{22} m_2.
 \end{equation}
 Thus
 \begin{equation}
-m_x = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{12}}{R_y}-\frac{S_{22}}{R_x} \right), \qquad
-m_y = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{21}}{R_x}-\frac{S_{11}}{R_y} \right).
+m_1 = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{12}}{R_2}-\frac{S_{22}}{R_1} \right), \qquad
+m_2 = \frac{1}{S_{11}S_{22}-S_{12}S_{21}}\left(\frac{S_{21}}{R_1}-\frac{S_{11}}{R_2} \right).
 \label{eq:ms}
 \end{equation}
+However, it should be noted $R_1$ and $R_2$ due to $m_1$ and $m_2$ may not be the main axes of curvature of now toroidally bent crystal, as the non-diagonal components $S_{61}$ and $S_{62}$ may cause the rotation with respect to the torques. Therefore the equations presented here apply to the case where the crystal wafer is allowed to adopt the shape freely as an reaction to the orthogonal torques \emph{e.g.} when a thin slab is bent by its edges.
+
+This deformation is implemented as \texttt{deformation.anisotropic\_plate\_fixed\_torques}. As an input, the user gives the bending radii $R_{1,2}$ from which the torques are calculated using Eq.~$\eqref{eq:ms}$. User may also give only the other of the $R_i$:s, when it is assumed that the torque acting in the orthogonal direction is zero, in which case the crystal adopts the corresponding $R_j, j \neq i$ via the anticlastic bending.
+
+\subsection{Anisotropic plate, fixed toroidal shape}
+When the shape of the bending is fixed \emph{e.g.} by bonding the crystal on a substrate, more complicated procedure than described before is needed. In the case of toroidal bending with the meridional bending radius $R_1$ (in the $x$-direction) and the sagittal radius $R_2$ (in the $y$-direction) are set the main axes of curvature, the relevant partial derivatives of $\mathbf{u}$, are \cite{Honkanen_2020}
+\begin{align}
+\frac{\partial u_x}{\partial x} &= - \frac{z}{R_1} \qquad
+\frac{\partial u_z}{\partial x} = \frac{x}{R_1} \qquad
+\frac{\partial u_z}{\partial z} = \left(S_{31}' \mu_x + S_{32}' \mu_y \right) z \nonumber \\
+\frac{\partial u_x}{\partial z} &= -\frac{x}{R_1} + \left[ 
+\left(S_{51}' \mu_x + S_{52}' \mu_y \right) \cos \alpha
+- \left(S_{41}' \mu_x + S_{42}' \mu_y \right) \sin \alpha
+\right]
+\end{align} 
+where
+\begin{align}
+\mu_x = \frac{(S_{12}' - S_{22}')(R_1 + R_2) + (S_{12}' + S_{22}')(R_1 - R_2)\cos 2 \alpha}{2(S_{11}'S_{22}'  - S_{12}'S_{12}')R_1 R_2}\\
+\mu_y = \frac{(S_{12}' - S_{11}')(R_1 + R_2) - (S_{12}' + S_{11}')(R_1 - R_2)\cos 2 \alpha}{2(S_{11}'S_{22}'  - S_{12}'S_{12}')R_1 R_2}.
+\end{align}
+$S_{ij}'$ are related to the input compliance matrix $S_{ij}$ by a rotation $\alpha$ in the $xy$-plane given by
+\begin{equation}
+\alpha = \frac{1}{2} \arctan \left[ \frac{D_\alpha(R_1 + R_2) - B_\alpha (R_1 - R_2)}{ A_\alpha (R_1 - R_2) - C_\alpha (R_1 + R_2) } \right]
+\end{equation}
+where
+\begin{align}
+A_\alpha &= S_{66} (S_{11} + S_{22} + 2 S_{12}) - (S_{61} + S_{62})^2 \\
+B_\alpha &=  2\left[S_{62} (S_{12} + S_{11}) - S_{61} (S_{12} + S_{22}) \right]   \\
+C_\alpha &= S_{66} (S_{22} - S_{11}) + S_{61}^2 - S_{62}^2  \\
+D_\alpha &= 2\left[S_{62} (S_{12} - S_{11}) + S_{61} (S_{12} - S_{22}) \right].
+\end{align}
+\emph{unless} $S_{61} = S_{62} = 0$, $S_{11} = S_{22}$, and $S_{11} + S_{22} - 2 S_{12} - S_{66} = 0$ when $\alpha = 0$.
+
+The rotation is performed to the compliance tensor by
+\begin{equation}
+s'_{ijkl} = \sum_{p,q,r,s} Q_{ip}Q_{jq}Q_{kr}Q_{ls} s_{pqrs} 
+\end{equation}
+where $Q$ is 
+\begin{equation}
+Q = \left[\begin{matrix}
+\cos \alpha & -\sin \alpha & 0 \\
+\sin \alpha & \cos \alpha & 0 \\
+0 & 0 & 1
+\end{matrix}\right].
+\end{equation}
+The Voigt notation\footnote{From \cite{Honkanen_2020}: "In the Voigt notation, a pair of indices $ij$ is replaced with a single index $m$ as follows: $11 \rightarrow 1$; $22 \rightarrow 2$; $33 \rightarrow 3$; $23,32 \rightarrow 4$; $13, 31 \rightarrow 5$ and $12, 21 \rightarrow 6$. The compliance matrix $S$ in the Voigt notation is given in terms of the compliance tensor $s$ so that $S_{mn} = (2 - \delta_{ij})(2 - \delta_{kl})s_{ijkl}$, where $ij$ and $kl$ are any pairs of indices corresponding to $m$ and $n$, respectively, and $\delta$ is the Kronecker delta."} is used to connect the compliance tensors and matrices.
+
+The fixed shape bending is implemented as \texttt{deformation.anisotropic\_plate\_fixed\_shape}.
+
 \subsection{Isotropic plate}
-The general anisotropic equations simplify considerably when assuming the plate to be isotropic. The isotropic compliance matrix is given by
+The general anisotropic equations for fixed torques and fixed shape simplify to the same solution when the plate is assumed to be isotropic. The isotropic compliance matrix is given by
 \begin{equation}
 S = \frac{1}{E}\left[\begin{matrix}
 1 & -\nu & -\nu & 0 & 0 & 0 \\
@@ -122,6 +244,69 @@ and thus
 \frac{\partial u_z}{\partial z} = \frac{\nu}{1-\nu}\left(\frac{1}{R_x}+\frac{1}{R_y}\right)z.
 \end{equation}
 Finally, since PyTTE assumes the top surface is at $z=0$, we need to shift the $z$-axis $z \rightarrow z + t/2 $
+\section{Crystallography and elastic constants}
+\subsection{Crystallographic vectors}
+For crystallographic data, \textsc{pyTTE} relies on the internal library of \textsc{xraylib}\cite{Schoonjans_2011}. The direct primitive vectors $\mathbf{a}_1$, $\mathbf{a}_2$, and $\mathbf{a}_3$ given in a Cartesian system are calculated from the lattice parameters $a$,$b$,$c$, $\alpha$, $\beta$, and $\gamma$ as follows
+\begin{equation}
+\mathbf{a}_1 = a \left[\begin{matrix} 1 \\ 0 \\ 0 \end{matrix}\right] \qquad
+\mathbf{a}_2 = b \left[\begin{matrix} \cos \gamma \\ \sin \gamma \\ 0 \end{matrix}\right] \qquad
+\mathbf{a}_3 = \frac{c}{\sin \gamma} \left[\begin{matrix} \cos \beta \sin \gamma \\ \cos \alpha - \cos\beta \cos\gamma \\ 
+\sqrt{\sin^2 \gamma - \cos^2 \alpha - \cos^2 \beta + 2 \cos \alpha \cos \beta \cos \gamma} \end{matrix}\right]
+\end{equation}
+The reciprocal primitive vectors are calculated according to
+\begin{equation}
+\mathbf{b}_1 = 2\pi \frac{\mathbf{a}_2 \times \mathbf{a}_3}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|} \qquad
+\mathbf{b}_2 = 2\pi \frac{\mathbf{a}_3 \times \mathbf{a}_1}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|} \qquad
+\mathbf{b}_3 = 2\pi \frac{\mathbf{a}_1 \times \mathbf{a}_2}{|\mathbf{a}_1 \times \mathbf{a}_2 \cdot \mathbf{a}_3|}.
+\end{equation} 
+The reciprocal vector $\mathbf{h}$ corresponding and normal to the Bragg planes with the Miller indices $(h,k,l)$ is thus
+\begin{equation}
+\mathbf{h} = h \mathbf{b}_1 + k \mathbf{b}_2 + l \mathbf{b}_3.
+\end{equation}
+Crystal directions $[n_1 n_2 n_3]$ are converted to Cartesian vectors $(x,y,z)$ followingly
+\begin{equation}
+\left[\begin{matrix} x \\ y \\ z \end{matrix}\right] = \left[\begin{matrix} \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3  \end{matrix}\right] \left[\begin{matrix} n_1 \\ n_2 \\ n_3 \end{matrix}\right]
+\end{equation}
+and \emph{vice versa} by inverting $[\mathbf{a}_1 \ \mathbf{a}_2 \ \mathbf{a}_3]$.
+
+\subsection{Vector and tensor rotation}
+A general counterclockwise rotation by $\theta$ about axis $\mathbf{u} = (u_1, u_2, u_3)$, with $|\mathbf{u}| = 1$, is given by the matrix
+\begin{equation}
+Q(\mathbf{u},\theta) = \left[\begin{matrix}
+\cos \theta + u_1^2 (1 - \cos \theta) & u_1 u_2 (1 -\cos \theta) - u_3 \sin \theta &  u_1 u_3 (1 -\cos \theta) + u_2 \sin \theta \\
+u_2 u_1 (1 -\cos \theta) + u_3 \sin \theta & \cos \theta + u_2^2 (1 - \cos \theta) & u_2 u_3 (1 -\cos \theta) - u_1 \sin \theta \\
+u_3 u_1 (1 -\cos \theta) - u_2 \sin \theta &  u_3 u_2 (1 -\cos \theta) + u_1 \sin \theta & \cos \theta + u_3^2 (1 - \cos \theta)
+\end{matrix} \right],
+\end{equation}
+also known as Rodrigues' rotation formula. Rotation is applied to vector $\mathbf{v}$ by the ordinary matrix multiplication $Q\mathbf{v}$. For a 4th order tensor $t$, the rotated components are 
+\begin{equation}
+t'_{ijkl} = \sum_{p,q,r,s} Q_{ip}Q_{jq}Q_{kr}Q_{ls} t_{pqrs}.
+\end{equation}
+
+In \textsc{pyTTE}, it is taken that $\mathbf{h} \parallel \hat{\mathbf{z}}$, \emph{i.e.} the symmetric Bragg case, corresponds to the asymmetry angle $\phi=0$. Thus in the most general case the elastic tensors go through the following three rotations:
+\begin{enumerate}
+\item Rotate elastic tensors and direction vectors so that $\mathbf{h}$ is parallel to $z$-axis
+\item Apply a rotation about $z$-axis to align the crystal directions in $xy$-plane
+\item Apply the asymmetry by performing the rotation of $\phi$ about $y$-axis.
+\end{enumerate}
+Assuming that at least either of $h$ an $k$ is non-zero, the rotation of $\mathbf{h}= (h_1,h_2,h_3)$ (step 1) is performed with the following axis and angle
+\begin{equation}
+\mathbf{u} = \frac{1}{\sqrt{h_1^2 + h_2^2}} \left[\begin{matrix} h_2 \\ -h_1 \\ 0 \end{matrix}\right] \qquad
+\theta = \arccos \left( \frac{h_3}{\sqrt{h_1^2 + h_2^2 + h_3^2}} \right).
+\end{equation}
+If $h=k=0$, a rotation of $\theta = \pi$ about $\mathbf{u} = -\hat{\mathbf{y}}$ is applied when $l<0$; no rotation is needed for $l>0$. For the in-plane rotation (step 2), the axis is $\mathbf{u} = [0,0,1]^{\mathrm{T}}$ and for the asymmetry rotation (step 3) $\mathbf{u} = [0,1,0]^{\mathrm{T}}$ and $\theta = \phi$.\footnote{Note that $\phi$ is defined clockwise-positive but about $-\hat{\mathbf{y}}$, not $\hat{\mathbf{y}}$}
+
+The crystal directions $[n_1' n_2' n_3']$ after a rotation $Q$ are calculated as follows
+\begin{equation}
+ \left[\begin{matrix} n_1' \\ n_2' \\ n_3' \end{matrix}\right] = 
+ (Q \left[\begin{matrix} \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \end{matrix} \right])^{-1} \mathbf{r}
+\end{equation}
+where $\mathbf{r}$ is an arbitrary direction in terms of Cartesian coordinates. (Although not clear from the notation, $Q \left[\begin{matrix} \mathbf{a}_1 & \mathbf{a}_2 & \mathbf{a}_3 \end{matrix} \right]$ and it's inverse are square matrices.)
+
+\subsection{Elastic constants}
+PyTTE v 1.0 has built-in elastic tensors for a handful of most commonly encountered crystals taken from CRC Handbook of Chemistry and Physics, 82nd edition.
+
+
 \bibliographystyle{unsrt}
 \bibliography{documentation}
 \end{document}

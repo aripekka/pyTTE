@@ -3,39 +3,72 @@ import numpy as np
 
 #Elastic constants for single crystals in units 10^11 Pa
 #Source: CRC Handbook of Chemistry and Physics, 82nd edition
-CRYSTALS = {
-            'Si' : {'system' : 'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
-            'Ge' : {'system' : 'cubic', 'C11' : 1.2835, 'C12' : 0.4823, 'C44' : 0.6666},
-            'CaMoO4' : {'system' : 'tetragonal', 'C11' : 1.447, 'C12' : 0.664,\
-                        'C13' : 0.455, 'C16' : 0.134, 'C33':1.265,'C44':0.369,'C66':0.451},
-            'CaCO3'  : {'system' : 'orthorhombic', 'C11' : 1.5958, 'C12' : 0.3663, 'C13' : 0.0197,\
-                        'C22' : 0.8697,'C23':0.1597, 'C33':0.8503,'C44' : 0.4132,'C55':0.2564,'C66':0.4274},
-            'aegirine' : {'system' : 'monoclinic', 'C11' : 1.858, 'C12' : 0.685, 'C13' : 0.707, 'C15':0.098,'C22':1.813,\
-                         'C23':0.626, 'C25':0.094,'C33':2.344,'C35':0.214,'C44':0.629,'C46':0.077,'C55':0.510,'C66':0.474},
-            'Be' : {'system' : 'hexagonal', 'C11': 2.923, 'C12':0.267, 'C13':0.140, 'C33':3.364,'C55':1.625},
-            'quartz' : {'system': 'trigonal', 'C11': 0.8670, 'C12':0.0704, 'C13':0.1191, 'C14':-0.1804,'C33':1.0575,'C44':0.5820},
+#
+#Contains only (some) crystals available in xraylib
 
-            'test_cubic' : {'system' : 'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
-            'test_tetragonal' : {'system' : 'tetragonal', 'C11' : 11, 'C12' : 12,'C13' : 13, 'C16' : 16, 'C33':33,'C44':44,'C66':66},
-            'test_orthorhombic'  : {'system' : 'orthorhombic', 'C11':11,'C12':12,'C13':13,'C22':22,'C23':23,'C33':33,'C44' : 44,'C55':55,'C66':66},
-            'test_monoclinic' : {'system' : 'monoclinic', 'C11':11,'C12' :12,'C13':13,'C15':15,'C22':22,'C23':23,'C25':25,'C33':33,'C35':35,'C44':44,'C46':46,'C55':55,'C66':66},
-            'test_hexagonal' : {'system' : 'hexagonal', 'C11':11, 'C12':12, 'C13':13, 'C33':33,'C55':55},
-            'test_trigonal' : {'system': 'trigonal', 'C11':11,'C12':12,'C13':13,'C14':14,'C33':33,'C44':44},
-            'test_triclinic': {'system':'triclinic', 'C11':11,'C12':12,'C13':13,'C14':14,'C15':15,'C16':16,\
-                                                     'C22':22,'C23':23,'C24':24,'C25':25,'C26':26,\
-                                                     'C33':33,'C34':34,'C35':35,'C36':36,\
-                                                     'C44':44,'C45':45,'C46':46,\
-                                                     'C55':55,'C56':56,\
-                                                     'C66':66}
+CRYSTALS = {
+            'AlphaQuartz' : {'system' :  'trigonal', 'C11' : 0.8670, 'C12' : 0.0704, 'C13' : 0.1191, 'C14' : -0.1804, 'C33' : 1.0575, 'C44' : 0.5820},
+            'Be'          : {'system' : 'hexagonal', 'C11' :  2.923, 'C12' :  0.267, 'C13' :  0.140, 'C33' :   3.364, 'C55' :  1.625},
+            'Beryl'       : {'system' : 'hexagonal', 'C11' :  2.800, 'C12' :  0.990, 'C13' :  0.670, 'C33' :   2.480, 'C55' :  0.658},
+            'Copper'      : {'system' :     'cubic', 'C11' :  1.683, 'C12' :  1.221, 'C44' :  0.757},
+
+            'GaAs'        : {'system' :     'cubic', 'C11' : 1.1877, 'C12' : 0.5372, 'C44' : 0.5944},
+            'Ge'          : {'system' :     'cubic', 'C11' : 1.2835, 'C12' : 0.4823, 'C44' : 0.6666},
+            'LiF'         : {'system' :     'cubic', 'C11' : 1.1397, 'C12' : 0.4767, 'C44' : 0.6364},
+            'Sapphire'    : {'system' :  'trigonal', 'C11' : 4.9735, 'C12' : 1.6397, 'C13' : 1.1220, 'C14' : -0.2358, 'C33' : 4.9911, 'C44' : 1.4739},
+            'Si'          : {'system' :     'cubic', 'C11' : 1.6578, 'C12' : 0.6394, 'C44' : 0.7962},
+
+
+            'prototype_cubic'        : {'system' :        'cubic', 'C11' : 11, 'C12' : 12, 'C44' : 44},
+            'prototype_tetragonal'   : {'system' :   'tetragonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C16' : 16, 'C33' : 33, 'C44' : 44, 'C66' : 66},
+            'prototype_orthorhombic' : {'system' : 'orthorhombic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C22' : 22, 'C23' : 23, 'C33' : 33, 'C44' : 44, 'C55' : 55, 'C66' : 66},
+            'prototype_monoclinic'   : {'system' :   'monoclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C15' : 15, 'C22' : 22, 'C23' : 23, 'C25' : 25, 
+                                                                   'C33' : 33, 'C35' : 35, 'C44' : 44, 'C46' : 46, 'C55' : 55, 'C66' : 66},
+            'prototype_hexagonal'    : {'system' :    'hexagonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C33' : 33, 'C55' : 55},
+            'prototype_trigonal'     : {'system' :     'trigonal', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C33' : 33, 'C44' : 44},
+            'prototype_triclinic'    : {'system' :    'triclinic', 'C11' : 11, 'C12' : 12, 'C13' : 13, 'C14' : 14, 'C15' : 15, 'C16' : 16,
+                                                                   'C22' : 22, 'C23' : 23, 'C24' : 24, 'C25' : 25, 'C26' : 26,
+                                                                   'C33' : 33, 'C34' : 34, 'C35' : 35, 'C36' : 36,
+                                                                   'C44' : 44, 'C45' : 45, 'C46' : 46,
+                                                                   'C55' : 55, 'C56' : 56,
+                                                                   'C66' : 66}
            }
+
+CRYSTALS['Si2'] = CRYSTALS['Si']
+CRYSTALS['Si_NIST'] = CRYSTALS['Si']
+
+def list_crystals(remove_prototypes = True):
+    '''
+    Returns the list of crystals with elastic data available.
+
+    Input:
+        remove_prototypes = boolean, whether omit prototypes for crystal data entries from the 
+                            list (default: True)
+    Output:
+        xtal_str_list = list of available crystal strings to be used with crystal_vectors()
+                        or elastic_matrices(). When the crystallographic data is available 
+                        in xraylib, the strings are congruent.
+    '''
+
+    xtal_str_list = list(CRYSTALS.keys())
+
+    if remove_prototypes:
+        for i in range(len(xtal_str_list)-1,-1,-1):
+            if xtal_str_list[i][:10] == 'prototype_':
+                xtal_str_list.pop(i) 
+
+    return xtal_str_list
 
 def matrix2tensor(matrix,mtype):
     '''
     Converts the elastic matrices using Voigt notation to elastic tensors.
 
     Input:
-    matrix = 6x6 matrix in Voigt notation
-    mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+        matrix = 6x6 matrix in Voigt notation
+        mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+
+    Output:
+        T = 3x3x3x3 stiffness or compliance tensor
     '''
 
     T = np.zeros((3,3,3,3))
@@ -107,18 +140,21 @@ def matrix2tensor(matrix,mtype):
 
     return T
 
-def tensor2matrix(tensor, mtype):
+def tensor2matrix(tensor, ttype):
     '''
     Converts the elastic tensors to matrices using Voigt notation.
 
     Input:
-    matrix = 3x3x3x3 elastic tensor
-    mtype = 'C' or 'S' for stiffness or compliance matrix, respectively
+        tensor = 3x3x3x3 elastic tensor
+        mtype = 'C' or 'S' for stiffness or compliance tensor, respectively
+
+    Output:
+        matrix = 6x6 stiffness or compliance matrix
     '''
 
     T = tensor
 
-    if mtype == 'C':
+    if ttype == 'C':
         #stiffness matrix
         matrix = np.array([
             [T[0,0,0,0], T[0,0,1,1], T[0,0,2,2], T[0,0,1,2], T[0,0,0,2], T[0,0,0,1]],
@@ -128,7 +164,7 @@ def tensor2matrix(tensor, mtype):
             [T[2,0,0,0], T[2,0,1,1], T[2,0,2,2], T[2,0,1,2], T[0,2,0,2], T[2,0,0,1]],
             [T[1,0,0,0], T[1,0,1,1], T[1,0,2,2], T[1,0,1,2], T[1,0,0,2], T[0,1,0,1]]])
 
-    elif mtype == 'S':
+    elif ttype == 'S':
         #compliance matrix
         matrix = np.array([
             [  T[0,0,0,0],   T[0,0,1,1],   T[0,0,2,2], 2*T[0,0,1,2], 2*T[0,0,0,2], 2*T[0,0,0,1]],
@@ -138,138 +174,61 @@ def tensor2matrix(tensor, mtype):
             [2*T[2,0,0,0], 2*T[2,0,1,1], 2*T[2,0,2,2], 4*T[2,0,1,2], 4*T[0,2,0,2], 4*T[2,0,0,1]],
             [2*T[1,0,0,0], 2*T[1,0,1,1], 2*T[1,0,2,2], 4*T[1,0,1,2], 4*T[1,0,0,2], 4*T[0,1,0,1]]])
     else:
-        raise Exception('Invalid elastic matrix type!')
+        raise Exception('Invalid elastic tensor type!')
    
     return matrix
-    
-def rotation_matrix(hkl,system='cubic'):
+   
+def elastic_matrices(xtal_str):
     '''
-        Computes the rotation matrix which aligns the given hkl along z-axis.
-        NOTE: works currently only for the cubic systems
-        TODO: figure out how to generalize to other systems, preferably by
-        obtaining the crystal directions from the elastic tensors (if possible)
-    '''
-    if not system == 'cubic':
-        raise NotImplementedError('Rotation of non-cubic systems not implemented!')
+    Returns the stiffness and compliance matrices for a given crystal.
 
-    if hkl[0] or hkl[1]:
-        #rotation axis
-        u = np.array([hkl[1],-hkl[0]])/np.sqrt(hkl[0]**2+hkl[1]**2)
-        #rotation angle
-        th = np.arccos(hkl[2]/np.sqrt(hkl[0]**2+hkl[1]**2+hkl[2]**2))
-    else:
-        if hkl[2] > 0:
-            #zero deg rotation about -y
-            u = np.array([0,-1])
-            th = 0
-        else:
-            #180 deg rotation about -y
-            u = np.array([0,-1])
-            th = np.pi
-
-    #rotation matrix
-    R=np.array([[ np.cos(th) + u[0]**2*(1-np.cos(th)),          u[0]*u[1]*(1-np.cos(th)),  u[1]*np.sin(th)],
-                [            u[0]*u[1]*(1-np.cos(th)), np.cos(th)+u[1]**2*(1-np.cos(th)), -u[0]*np.sin(th)],
-                [                    -u[1]*np.sin(th),                   u[0]*np.sin(th),       np.cos(th)]])
-
-    return R
-
-def rotation_matrix_axis_angle(u,theta):
-    '''
-        Computes a matrix which performs a rotation of theta degrees counterclockwise about axis u.
-    '''    
-    #normalize
-    u = np.array(u)
-    u = u/np.sqrt(u[0]**2+u[1]**2+u[2]**2)
-    #rotation angle
-    th = np.radians(theta)
-
-    #rotation matrix
-    R=np.array([[        np.cos(th) + u[0]**2*(1-np.cos(th)), u[0]*u[1]*(1-np.cos(th)) - u[2]*np.sin(th), u[0]*u[2]*(1-np.cos(th)) + u[1]*np.sin(th)],
-                [ u[0]*u[1]*(1-np.cos(th)) + u[2]*np.sin(th),        np.cos(th) + u[1]**2*(1-np.cos(th)), u[1]*u[2]*(1-np.cos(th)) - u[0]*np.sin(th)],
-                [ u[0]*u[2]*(1-np.cos(th)) - u[1]*np.sin(th), u[1]*u[2]*(1-np.cos(th)) + u[0]*np.sin(th),        np.cos(th) + u[2]**2*(1-np.cos(th))]])
-
-    return R
-
-def compute_elastic_matrices(zdir, xtal):
-    '''
-        Computes the compliance and stiffness matrices S and C a given z-direction.
-        The x- and y-directions are determined automatically
-        returns: S, C, x_dir, y_dir
+    Input:
+        xtal_str = crystal string e.g. 'Si', 'Ge', 'AlphaQuartz'
+    Output:
+        C_matrix = stiffness matrix in units 10^{11} Pa
+        S_matrix = compliance matrix in units 10^{-11} Pa^-1
     '''
 
     try:
-        xtal_data=CRYSTALS[xtal]
+        xtal_data=CRYSTALS[xtal_str]
     except KeyError:
-        raise KeyError("Elastic parameters for '"+str(xtal)+"' not found!")
+        raise KeyError("Elastic parameters for '"+str(xtal_str)+"' not found!")
+
+    C11, C12, C13, C14, C15, C16  = 0, 0, 0, 0, 0, 0
+    C22, C23, C24, C25, C26 = 0, 0, 0, 0, 0
+    C33, C34, C35, C36 = 0, 0, 0, 0
+    C44, C45, C46 = 0, 0, 0
+    C55, C56 = 0, 0
+    C66 = 0
        
     if xtal_data['system'] == 'cubic':
         C11, C12, C44 = xtal_data['C11'], xtal_data['C12'], xtal_data['C44']
-        C13, C14, C15, C16 = C12, 0, 0, 0
-        C22, C23, C24, C25, C26 = C11, C12, 0, 0, 0
-        C33, C34, C35, C36 = C11, 0, 0, 0
-        C45, C46 = 0, 0
-        C55, C56 = C44, 0
-        C66 = C44
+        C22, C13, C23, C33, C55, C66 = C11, C12, C12, C11, C44, C44
     elif xtal_data['system'] == 'tetragonal':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C16 = xtal_data['C16']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C66 = xtal_data['C66']
-        C14, C15 = 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, 0, 0, -C16
-        C34, C35, C36 = 0, 0, 0
-        C45, C46 = 0, 0
-        C55, C56 = C44, 0
+        C11, C12, C13, C16 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C16']
+        C33, C44, C66  = xtal_data['C33'], xtal_data['C44'], xtal_data['C66']
+        C22, C23, C26, C55 = C11, C13, -C16, C44
     elif xtal_data['system'] == 'orthorhombic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C22, C23 = xtal_data['C22'], xtal_data['C23']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C55 = xtal_data['C55']
-        C66 = xtal_data['C66']
-        C14, C15, C16 = 0,0,0
-        C24, C25, C26 = 0,0,0
-        C34, C35, C36 = 0,0,0
-        C45, C46 = 0,0
-        C56 = 0
+        C11, C12, C13, C22, C23 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C22'], xtal_data['C23']
+        C33, C44, C55, C66  = xtal_data['C33'], xtal_data['C44'], xtal_data['C55'], xtal_data['C66']
     elif xtal_data['system'] == 'monoclinic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C15 = xtal_data['C15']
-        C22, C23, C25 = xtal_data['C22'], xtal_data['C23'], xtal_data['C25']
-        C33, C35 = xtal_data['C33'], xtal_data['C35']
-        C44, C46 = xtal_data['C44'], xtal_data['C46']
-        C55 = xtal_data['C55']
-        C66 = xtal_data['C66']
-        C14, C16, C24, C26, C34, C36, C45, C56 = 0,0,0,0,0,0,0,0
+        C11, C12, C13, C15 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C15']
+        C22, C23, C25, C33, C35 = xtal_data['C22'], xtal_data['C23'], xtal_data['C25'], xtal_data['C33'], xtal_data['C35']
+        C44, C46, C55, C66 = xtal_data['C44'], xtal_data['C46'], xtal_data['C55'], xtal_data['C66']
     elif xtal_data['system'] == 'hexagonal':
         C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C33  = xtal_data['C33']
-        C55 = xtal_data['C55']
-        C14, C15, C16 = 0, 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, 0, 0, 0
-        C34, C35, C36 = 0, 0, 0
-        C44, C45, C46 = C55, 0, 0
-        C56 =  0
+        C33, C55  = xtal_data['C33'], xtal_data['C55']
+        C22, C23, C44 = C11, C13, C55
         C66 = (C11-C12)/2
     elif xtal_data['system'] == 'trigonal':
         C11, C12, C13, C14 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C14']
-        C33  = xtal_data['C33']
-        C44 = xtal_data['C44']
-        C15, C16 = 0, 0
-        C22, C23, C24, C25, C26 = C11, C13, -C14, 0, 0
-        C34, C35, C36 = 0, 0, 0
-        C45, C46 =  0, 0
-        C55, C56 =  C44, C14
+        C33, C44 = xtal_data['C33'], xtal_data['C44']
+        C22, C23, C24, C55, C56 = C11, C13, -C14, C44, C14
         C66 = (C11-C12)/2
     elif xtal_data['system'] == 'triclinic':
-        C11, C12, C13 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13']
-        C14, C15, C16 = xtal_data['C14'], xtal_data['C15'], xtal_data['C16']
-        C22, C23, C24 = xtal_data['C22'], xtal_data['C23'], xtal_data['C24']
-        C25, C26 = xtal_data['C25'], xtal_data['C26']
-        C33, C34, C35 = xtal_data['C33'], xtal_data['C34'], xtal_data['C35']
-        C36 =  xtal_data['C36']
+        C11, C12, C13, C14, C15, C16 = xtal_data['C11'], xtal_data['C12'], xtal_data['C13'], xtal_data['C14'], xtal_data['C15'], xtal_data['C16']
+        C22, C23, C24, C25, C26 = xtal_data['C22'], xtal_data['C23'], xtal_data['C24'], xtal_data['C25'], xtal_data['C26']
+        C33, C34, C35, C36 = xtal_data['C33'], xtal_data['C34'], xtal_data['C35'], xtal_data['C36']
         C44, C45, C46 = xtal_data['C44'], xtal_data['C45'], xtal_data['C46']
         C55, C56 = xtal_data['C55'], xtal_data['C56']
         C66 = xtal_data['C66']
@@ -277,135 +236,47 @@ def compute_elastic_matrices(zdir, xtal):
         ValueError('Not a valid crystal system!')
 
     #Elastic matrices of the non-rotated coordinate system
-    Cmatrix = np.array([[C11, C12, C13, C14, C15, C16],
-                        [C12, C22, C23, C24, C25, C26],
-                        [C13, C23, C33, C34, C35, C36],
-                        [C14, C24, C34, C44, C45, C46],
-                        [C15, C25, C35, C45, C55, C56],
-                        [C16, C26, C36, C46, C56, C66]])
+    C_matrix = np.array([[C11, C12, C13, C14, C15, C16],
+                         [C12, C22, C23, C24, C25, C26],
+                         [C13, C23, C33, C34, C35, C36],
+                         [C14, C24, C34, C44, C45, C46],
+                         [C15, C25, C35, C45, C55, C56],
+                         [C16, C26, C36, C46, C56, C66]])
 
-    Smatrix = np.linalg.inv(Cmatrix)
+    S_matrix = np.linalg.inv(C_matrix)
 
-    #convert matrices to tensors
-    Crot = matrix2tensor(Cmatrix,'C')
-    Srot = matrix2tensor(Smatrix,'S')
+    return C_matrix, S_matrix
 
-    Q = rotation_matrix(zdir,xtal_data['system'])
+def rotate_elastic_tensor(tensor, rotation_matrix):
+    '''
+    Performs the rotation described by rotation_matrix to the given elastic tensor.
 
-    #Rotate the tensors
+    Input:
+        tensor = 3x3x3x3 elastic tensor
+        rotation_matrix = 3x3 rotation matrix
+    Output:
+        tensor_rot = rotated tensor
+    '''
+    tensor_rot = tensor
     for i in range(4):
-        Crot = np.tensordot(Q,Crot,axes=((1,),(i,)))
-        Srot = np.tensordot(Q,Srot,axes=((1,),(i,)))
+        tensor_rot = np.tensordot(rotation_matrix,tensor_rot,axes=((1,),(i,)))
 
-    #Assemble the elastic matrices
-    C = tensor2matrix(Crot,'C')
-    S = tensor2matrix(Srot,'S')
+    return tensor_rot
 
-    C=C*1e11 #in pascal
-    S=S*1e-11 #in 1/pascal
-
-    #calculate x and y directions
-    #TODO generalize to non-cubic systems
-    x_dir = np.dot(Q.T,np.array([[1,0,0]]).T)
-    y_dir = np.dot(Q.T,np.array([[0,1,0]]).T)
-    z_dir = np.dot(Q.T,np.array([[0,0,1]]).T)
-
-    return S, C, x_dir, y_dir
-
-def rotate_inplane(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
+def rotate_elastic_matrix(matrix, mtype, rotation_matrix):
     '''
-        Rotates the given tensor around the z-axis by phi degrees counterclockwise.
-        x_dir and y_dir are the crystal directions (normalized hkl) along the x- and 
-        y-axes.
+    Performs the rotation described by rotation_matrix to the given elastic matrix.
+
+    Input:
+        matrix = 6x6 elastic matrix
+        mtype = 'C' if the matrix to be rotated is the stiffness matrix 
+                or 'S' if the compliance matrix
+        rotation_matrix = 3x3 rotation matrix
+    Output:
+        matrix_rot = rotated matrix
     '''
+    tensor = matrix2tensor(matrix,mtype)
+    tensor_rot = rotate_elastic_tensor(tensor, rotation_matrix)
+    matrix_rot = tensor2matrix(tensor_rot,mtype)
 
-    #In-plane rotation
-    Q = rotation_matrix_axis_angle([0,0,1],phi)
-    for i in range(4):
-        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
-
-    #calculate the crystal directions along the in-plane axes  
-
-    #this computes what were the directions of post-rotation x- and y axes 
-    #in terms of the pre-rotated x- and y- coordinates
-    prerot_x_coor = np.dot(Q.T, np.array([[1,0,0]]).T)
-    prerot_y_coor = np.dot(Q.T, np.array([[0,1,0]]).T)
-    
-    #prerotated x(y)-axis aligns with the crystal direction x(y)_dir
-    #and assuming that they are properly normalized, they form an orthonormal basis.
-    #Thus the postrotation x_dir and y_dir are linear combinations of
-    #prerot x_dir and y_dir based on the calculated coordinate transform:
-    new_x_dir = prerot_x_coor[0]*x_dir + prerot_x_coor[1]*y_dir
-    new_y_dir = prerot_y_coor[0]*x_dir + prerot_y_coor[1]*y_dir
-
-    return tensor, new_x_dir, new_y_dir
-
-def apply_asymmetry(tensor, phi, x_dir = np.array([[1,0,0]]).T, y_dir = np.array([[0,1,0]]).T):
-    '''
-        Rotates the given tensor around the y-axis by phi degrees counterclockwise.
-        This corresponds to the definition of clockwise-positive asymmetry angle in
-        xz-plane as defined in the documentation. x_dir and y_dir are the crystal 
-        directions (normalized hkl) along the x- and y-axes.
-    '''
-
-    #Asymmetric rotation (note that in pyTTE documentation
-    #rotation angle is positive in clockwise direction in
-    #right-handed xz-plane = counterclockwise rotation around y-axis)
-    Q = rotation_matrix_axis_angle([0,1,0],phi)
-    for i in range(4):
-        tensor = np.tensordot(Q,tensor,axes=((1,),(i,)))
-
-    #calculate the crystal directions along the in-plane axes  
-
-    #this computes what were the directions of post-rotation x- and y axes 
-    #in terms of the pre-rotated x- and y- coordinates
-    prerot_x_coor = np.dot(Q.T, np.array([[1,0,0]]).T)
-    prerot_y_coor = np.dot(Q.T, np.array([[0,1,0]]).T)
-    
-    #prerotated x(y)-axis aligns with the crystal direction x(y)_dir
-    #and assuming that they are properly normalized, they form an orthonormal basis.
-    #Thus the postrotation x_dir and y_dir are linear combinations of
-    #prerot x_dir and y_dir based on the calculated coordinate transform:
-    new_x_dir = prerot_x_coor[0]*x_dir + prerot_x_coor[1]*y_dir
-    new_y_dir = prerot_y_coor[0]*x_dir + prerot_y_coor[1]*y_dir
-
-    return tensor, new_x_dir, new_y_dir
-    
-if __name__=='__main__':
-    #print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'test_cubic')[1]/1e11,precision=4,suppress_small=True))
-
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[0]/1e-11,precision=4))
-    print('Cubic:\n',np.array2string(compute_elastic_matrices([1,0,0],'Si')[1]/1e11,precision=4))
-
-    S,C,x_dir,y_dir = compute_elastic_matrices([1,1,0],'Si')
-
-    tensor, x_dir, y_dir = rotate_inplane(matrix2tensor(S/1e-11,'S'), 45, x_dir,y_dir)
-    S = tensor2matrix(tensor,'S')
-
-    S36 = S[2,5]
-    S32 = S[2,1]
-    S31 = S[2,0]
-
-    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) + np.pi)/2)
-    print('Angle of steepest gradient: ', max_grad_angle,' deg')
-    max_grad_angle = np.degrees((np.arctan2(S36,S32-S31) - np.pi)/2)
-    print('Angle of steepest gradient: ', max_grad_angle,' deg')
-
-    print('In-plane rotation:')
-    print('Crystal direction along x: ',x_dir.T)
-    print('Crystal direction along y: ',y_dir.T)
-
-    #C,x,y = rotate_inplane_and_apply_asymmetry(matrix2tensor(compute_elastic_matrices([1,1,1],'test_cubic')[1]/1e11),0,90)
-
-    #print(np.array2string(tensor2matrix(C),precision=4,suppress_small=True))
-    #print('x',x)
-    #print('y',y)
-       
-    '''
-    print('Tetragonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_tetragonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Orthorhombic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_orthorhombic')[1]/1e11,precision=4,suppress_small=True))
-    print('Monoclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_monoclinic')[1]/1e11,precision=4,suppress_small=True))
-    print('Hexagonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_hexagonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Trigonal:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_trigonal')[1]/1e11,precision=4,suppress_small=True))
-    print('Triclinic:\n',np.array2string(compute_elastic_matrices([0,0,1],'test_triclinic')[1]/1e11,precision=4,suppress_small=True))
-    '''
+    return matrix_rot
