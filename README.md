@@ -8,7 +8,7 @@ For crystallographic data and structure factor calculations PyTTE uses `xraylib`
 
 ### Installation
 
-PyTTE can be installed using `pip` (NB: v 1.0 is not yet in PyPI):
+PyTTE can be installed using `pip`:
 
 ```
 pip install pyTTE
