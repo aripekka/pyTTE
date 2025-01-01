@@ -1,7 +1,7 @@
 # pyTTE v.1.0
 Package to calculate diffraction curves of deformed crystals by numerically integrating the 1D Takagi-Taupin equation. For derivative work please cite:
 
-Ari-Pekka Honkanen and Simo Huotari, "General method to calculate the elastic deformation and X-ray diffraction properties of bent crystal wafers" (2020) Submitted to IUCrJ. https://arxiv.org/abs/2006.04952
+Ari-Pekka Honkanen and Simo Huotari, "General method to calculate the elastic deformation and X-ray diffraction properties of bent crystal wafers." IUCrJ 8.1 (2021): 102-115. https://doi.org/10.1107/S2052252520014165
 
 ### Requirements
 PyTTE works on both Python 3 and Python 2. However, Python 2 support is not guaranteed on future versions. 
